@@ -1,0 +1,13 @@
+streamlit
+nltk
+torch
+transformers
+requests
+pillow
+numpy
+open-clip-torch
+scikit-learn
+sentence-transformers
+scipy
+pyspellchecker
+requests

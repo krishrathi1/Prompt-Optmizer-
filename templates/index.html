@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Prompt Optimizer PRO | NLP Analytics Engine</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════ HEADER ═══════════════════════════════════ -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="logo-group">
+        <div class="logo-icon">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+            <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+            <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="site-title">Prompt Optimizer <span class="badge-pro">PRO</span></h1>
+          <p class="site-subtitle">Neural NLP Analytics & Diffusion Intelligence Engine</p>
+        </div>
+      </div>
+      <div class="header-status">
+        <span class="status-dot" id="statusDot"></span>
+        <span id="statusLabel">Initializing…</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ═══════════════════════════════════ MAIN LAYOUT ═══════════════════════════════ -->
+  <div class="app-layout">
+
+    <!-- ──────────── SIDEBAR ──────────── -->
+    <aside class="sidebar">
+
+      <!-- Style Presets -->
+      <div class="sidebar-block">
+        <div class="sidebar-label">Artistic Style</div>
+        <div class="style-cards" id="styleCards">
+          <div class="style-card active" data-value="Photoreal">
+            <span class="style-icon">📸</span>
+            <span class="style-name">Photoreal</span>
+          </div>
+          <div class="style-card" data-value="Cinematic">
+            <span class="style-icon">🎬</span>
+            <span class="style-name">Cinematic</span>
+          </div>
+          <div class="style-card" data-value="Cyberpunk">
+            <span class="style-icon">🌆</span>
+            <span class="style-name">Cyberpunk</span>
+          </div>
+          <div class="style-card" data-value="Renaissance">
+            <span class="style-icon">🎨</span>
+            <span class="style-name">Renaissance</span>
+          </div>
+          <div class="style-card" data-value="Anime">
+            <span class="style-icon">🌸</span>
+            <span class="style-name">Anime</span>
+          </div>
+        </div>
+        <input type="hidden" id="stylePreset" value="Photoreal" />
+      </div>
+
+      <!-- Vibe HUD -->
+      <div class="sidebar-block">
+        <div class="sidebar-label">Sentiment Vibe</div>
+        <div class="vibe-hud" id="vibeHUD">
+          <div class="vibe-pulse" id="vibePulse"></div>
+          <div>
+            <div class="vibe-mood" id="vibeMood">NLP READY</div>
+            <div class="vibe-lighting" id="vibeLighting">Awaiting input…</div>
+          </div>
+        </div>
+        <div class="sentiment-rows">
+          <div class="s-row">
+            <span class="s-label">Positive</span>
+            <div class="s-track"><div class="s-bar pos" id="sPos"></div></div>
+            <span class="s-val" id="sPosVal">0%</span>
+          </div>
+          <div class="s-row">
+            <span class="s-label">Negative</span>
+            <div class="s-track"><div class="s-bar neg" id="sNeg"></div></div>
+            <span class="s-val" id="sNegVal">0%</span>
+          </div>
+          <div class="s-row">
+            <span class="s-label">Neutral</span>
+            <div class="s-track"><div class="s-bar neu" id="sNeu"></div></div>
+            <span class="s-val" id="sNeuVal">0%</span>
+          </div>
+        </div>
+        <div class="compound-display" id="compoundDisplay" style="display:none">
+          Compound: <strong id="compoundVal">0.000</strong>
+        </div>
+      </div>
+
+      <!-- Legend -->
+      <div class="sidebar-block">
+        <div class="sidebar-label">POS Tag Legend</div>
+        <div class="legend-grid">
+          <div class="legend-item"><span class="legend-dot noun"></span> Noun</div>
+          <div class="legend-item"><span class="legend-dot adj"></span> Adjective</div>
+          <div class="legend-item"><span class="legend-dot verb"></span> Verb</div>
+          <div class="legend-item"><span class="legend-dot adv"></span> Adverb</div>
+          <div class="legend-item"><span class="legend-dot other"></span> Function</div>
+        </div>
+      </div>
+
+      <!-- NEW: Ollama Integration -->
+      <div class="sidebar-block ollama-card">
+        <div class="sidebar-label">Local LLM Brain</div>
+        <div class="ollama-toggle-wrap">
+          <div class="ollama-info">
+            <span class="ollama-icon">🧠</span>
+            <div class="ollama-text">
+              <span class="ollama-name">Ollama AI</span>
+              <span class="ollama-status">Local Enhancement</span>
+            </div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="ollamaToggle">
+            <span class="slider round"></span>
+          </label>
+        </div>
+        <p class="ollama-desc">Requires Ollama running on port 11434 (llama3.2 recommended).</p>
+      </div>
+
+      <!-- Settings (revealed after optimize) -->
+      <div class="sidebar-block" id="settingsBlock" style="display:none">
+        <div class="sidebar-label">SD Settings</div>
+        <div class="settings-row"><span>Sampler</span><strong id="setSampler">—</strong></div>
+        <div class="settings-row"><span>Steps</span><strong id="setSteps">—</strong></div>
+        <div class="settings-row"><span>CFG Scale</span><strong id="setCfg">—</strong></div>
+      </div>
+
+    </aside>
+
+    <!-- ──────────── MAIN PANEL ──────────── -->
+    <main class="main-panel">
+
+      <!-- Input Row -->
+      <section class="input-section">
+        <div class="input-wrap">
+          <input type="text" id="promptInput"
+            placeholder="Describe your vision… e.g. 'a peaceful monk in a mountain temple at dusk'"
+            autocomplete="off" spellcheck="false" />
+          <div class="input-meta">
+            <span id="charCount">0 chars</span>
+            <span id="wordCount">0 words</span>
+          </div>
+        </div>
+        <button id="optimizeBtn" class="btn-primary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polyline>
+          </svg>
+          Optimize
+        </button>
+      </section>
+
+      <!-- ═══ RESULTS (hidden until optimize) ═══ -->
+      <div id="resultsWrap" style="display:none">
+
+        <!-- ─── SECTION 1: Pipeline Flowchart ─── -->
+        <section class="results-section">
+          <div class="section-header">
+            <h2 class="section-title">NLP Pipeline</h2>
+            <span class="section-sub">8-stage optimization — each stage activates sequentially</span>
+          </div>
+          <div class="pipeline-flow" id="pipelineFlow">
+            <!-- Injected by JS -->
+          </div>
+          <!-- Stage Detail Card -->
+          <div class="stage-detail-card" id="stageDetailCard" style="display:none">
+            <div class="stage-detail-header">
+              <div class="stage-detail-icon" id="stageDetailIcon"></div>
+              <div>
+                <div class="stage-detail-name" id="stageDetailName"></div>
+                <div class="stage-detail-desc" id="stageDetailDesc"></div>
+              </div>
+            </div>
+            <div class="stage-detail-body" id="stageDetailBody"></div>
+          </div>
+        </section>
+
+        <!-- ─── SECTION 2: Token Analysis Grid ─── -->
+        <section class="results-section">
+          <div class="section-header">
+            <h2 class="section-title">Token Analysis</h2>
+            <span class="section-sub">Hover each token to see POS info, role, and synonym options</span>
+          </div>
+          <div class="token-grid" id="tokenGrid">
+            <!-- Injected by JS -->
+          </div>
+          <div class="pos-summary" id="posSummary"></div>
+        </section>
+
+        <!-- ─── SECTION 3: Transformations + Logs (2-col) ─── -->
+        <section class="results-section">
+          <div class="two-col">
+
+            <!-- Linguistic Transformations -->
+            <div class="card">
+              <div class="card-header">
+                <h3>Linguistic Transformations</h3>
+                <span class="card-badge" id="changeCount">0 changes</span>
+              </div>
+              <div id="transformList" class="transform-list">
+                <p class="empty-state">No synonym substitutions applied.</p>
+              </div>
+            </div>
+
+            <!-- Pipeline Log -->
+            <div class="card">
+              <div class="card-header">
+                <h3>Pipeline Log</h3>
+                <span class="card-badge log-badge">8 stages</span>
+              </div>
+              <div id="pipelineLog" class="log-list"></div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- ─── SECTION 4: Genetic Variant Explorer ─── -->
+        <section class="results-section">
+          <div class="section-header">
+            <h2 class="section-title">Genetic Variant Explorer</h2>
+            <span class="section-sub">4 structural variants evolved — the highest fitness score wins</span>
+          </div>
+          <div class="variant-grid" id="variantGrid">
+            <!-- Injected by JS -->
+          </div>
+        </section>
+
+        <!-- ─── SECTION 5: Negative Shield ─── -->
+        <section class="results-section">
+          <div class="shield-card">
+            <div class="shield-header">
+              <div class="shield-icon">🛡</div>
+              <div>
+                <h3>Negative Prompt Shield</h3>
+                <span>Context-aware quality blockers — activated in Step 8</span>
+              </div>
+            </div>
+            <div class="shield-tags" id="shieldTags"></div>
+          </div>
+        </section>
+
+        <!-- ─── SECTION 6: Final Prompts ─── -->
+        <section class="results-section">
+          <div class="two-col">
+
+            <div class="prompt-card optimized">
+              <div class="prompt-card-header">
+                <span class="prompt-card-label">Original</span>
+                <button class="copy-btn" id="copyRaw" title="Copy to clipboard">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                  Copy
+                </button>
+              </div>
+              <p class="prompt-card-text" id="finalOriginal"></p>
+            </div>
+
+            <div class="prompt-card enhanced">
+              <div class="prompt-card-header">
+                <span class="prompt-card-label enhanced-label">NLP-Enhanced</span>
+                <button class="copy-btn enhanced-copy" id="copyOptimized" title="Copy to clipboard">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                  Copy
+                </button>
+              </div>
+              <p class="prompt-card-text enhanced-text" id="finalOptimized"></p>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- ─── SECTION 7: Visual Engine ─── -->
+        <section class="results-section">
+          <div class="generate-banner">
+            <div>
+              <h3>Step 9 — Visual Rendering Engine</h3>
+              <p>Send both prompts to Stable Diffusion and compare outputs side-by-side</p>
+            </div>
+            <button id="generateBtn" class="btn-generate">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              Generate &amp; Compare
+            </button>
+          </div>
+        </section>
+
+        <!-- ─── SECTION 8: Image Comparison (hidden until generated) ─── -->
+        <section class="results-section" id="imageSection" style="display:none">
+          <div class="section-header">
+            <h2 class="section-title">Visual Comparison</h2>
+            <span class="section-sub">Raw vs NLP-enhanced diffusion output</span>
+          </div>
+          <div class="image-comparison-grid">
+            <div class="image-panel">
+              <div class="image-panel-label">Original Prompt</div>
+              <p class="image-prompt-text" id="imgRawPrompt"></p>
+              <div class="image-frame" id="rawImageFrame">
+                <div class="skeleton-loader"></div>
+              </div>
+            </div>
+            <div class="vs-divider">VS</div>
+            <div class="image-panel enhanced-panel">
+              <div class="image-panel-label enhanced-label">NLP-Enhanced</div>
+              <p class="image-prompt-text" id="imgOptPrompt"></p>
+              <div class="image-frame" id="optImageFrame">
+                <div class="skeleton-loader"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Metrics Dashboard -->
+          <div class="metrics-section" id="metricsSection" style="display:none">
+            <div class="section-header" style="margin-top:2rem">
+              <h2 class="section-title">Step 10 — Evaluation Metrics</h2>
+              <span class="section-sub">Research-grade multi-objective scoring</span>
+            </div>
+
+            <div class="metrics-grid">
+              <div class="metric-card">
+                <div class="metric-label">CLIP Semantic Score</div>
+                <div class="metric-compare">
+                  <div class="metric-col">
+                    <div class="metric-sub-label">Original</div>
+                    <div class="metric-bar-wrap">
+                      <div class="metric-bar raw-bar" id="clipRawBar"></div>
+                    </div>
+                    <div class="metric-val" id="clipRawVal">—</div>
+                  </div>
+                  <div class="metric-col">
+                    <div class="metric-sub-label">Enhanced</div>
+                    <div class="metric-bar-wrap">
+                      <div class="metric-bar opt-bar" id="clipOptBar"></div>
+                    </div>
+                    <div class="metric-val accent" id="clipOptVal">—</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="metric-card">
+                <div class="metric-label">Aesthetic Heuristic</div>
+                <div class="metric-compare">
+                  <div class="metric-col">
+                    <div class="metric-sub-label">Original</div>
+                    <div class="metric-bar-wrap">
+                      <div class="metric-bar raw-bar" id="aeRawBar"></div>
+                    </div>
+                    <div class="metric-val" id="aeRawVal">—</div>
+                  </div>
+                  <div class="metric-col">
+                    <div class="metric-sub-label">Enhanced</div>
+                    <div class="metric-bar-wrap">
+                      <div class="metric-bar opt-bar amber-bar" id="aeOptBar"></div>
+                    </div>
+                    <div class="metric-val accent" id="aeOptVal">—</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="metric-card">
+                <div class="metric-label">Token Complexity</div>
+                <div class="metric-compare">
+                  <div class="metric-col">
+                    <div class="metric-sub-label">Original</div>
+                    <div class="metric-val" id="tokRawVal">—</div>
+                  </div>
+                  <div class="metric-col">
+                    <div class="metric-sub-label">Enhanced</div>
+                    <div class="metric-val accent" id="tokOptVal">—</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="metric-card composite-card" id="compositeCard">
+                <div class="metric-label">Composite Quality Score</div>
+                <div class="composite-score" id="compositeScore">—</div>
+                <div class="composite-formula">0.4 × CLIP + 0.3 × Aesthetic + 0.3 × Complexity</div>
+                <div class="composite-bar-wrap">
+                  <div class="composite-bar" id="compositeBar"></div>
+                </div>
+              </div>
+            </div>
+
+            <div id="improvementBanner" class="improvement-banner" style="display:none"></div>
+          </div>
+        </section>
+
+      </div><!-- /resultsWrap -->
+    </main>
+  </div>
+
+  <!-- ═══════════════════════════════ TOKEN TOOLTIP ═══════════════════════════════ -->
+  <div class="token-tooltip" id="tokenTooltip" style="display:none">
+    <div class="tt-word" id="ttWord"></div>
+    <div class="tt-row"><span class="tt-key">POS Tag</span><span class="tt-val" id="ttPos"></span></div>
+    <div class="tt-row"><span class="tt-key">Label</span><span class="tt-val tt-label" id="ttLabel"></span></div>
+    <div class="tt-row"><span class="tt-key">Role</span><span class="tt-val" id="ttRole"></span></div>
+    <div class="tt-row" id="ttWeightRow"><span class="tt-key">Weight</span><span class="tt-val accent" id="ttWeight"></span></div>
+    <div class="tt-syns" id="ttSyns" style="display:none">
+      <div class="tt-key">Synonyms</div>
+      <div class="tt-syn-list" id="ttSynList"></div>
+    </div>
+    <div class="tt-syns" id="ttSpec" style="display:none">
+      <div class="tt-key">Abstraction Ladder</div>
+      <div class="tt-ladder" id="ttLadder"></div>
+    </div>
+    <div class="tt-change" id="ttChange" style="display:none">
+      <span id="ttFrom"></span> → <span class="accent" id="ttTo"></span>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    Powered by NLTK · WordNet · VADER Sentiment · Genetic Selection · Stable Diffusion
+  </footer>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
