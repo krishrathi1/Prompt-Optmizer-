@@ -10,9 +10,13 @@ import random
 import re
 import os
 import difflib
+import logging
 import requests
 from spellchecker import SpellChecker
 from collections import defaultdict
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 def download_nltk_resources():
     local_nltk_path = os.path.join(os.path.dirname(__file__), 'nltk_data')
@@ -217,6 +221,52 @@ class PromptOptimizer:
         except Exception as e:
             logger.error(f"Ollama connection error: {e}")
             return prompt
+
+    def ollama_spellcheck(self, prompt, model="llama3.2"):
+        """Use local Ollama to correct spellings and return metadata for UI."""
+        url = "http://localhost:11434/api/generate"
+        system_prompt = (
+            "You are a professional proofreader. "
+            "Fix all spelling and grammar errors in the prompt while KEEPING the core meaning. "
+            "Return ONLY the corrected text. No explanations."
+        )
+        
+        payload = {
+            "model": model,
+            "prompt": f"{system_prompt}\n\nUser prompt: {prompt}",
+            "stream": False,
+            "options": {"temperature": 0.1, "num_predict": 100}
+        }
+        
+        try:
+            logger.info(f"Ollama Spellcheck: Requesting {model} for prompt: {prompt[:30]}...")
+            response = requests.post(url, json=payload, timeout=8)
+            if response.status_code == 200:
+                raw_corrected = response.json().get("response", "").strip()
+                # Clean up if model adds labels
+                corrected = re.sub(r'^(Enhanced|Corrected|Fixed|Prompt):\s*', '', raw_corrected, flags=re.IGNORECASE)
+                
+                # Diffing to show changes in UI
+                orig_parts = re.findall(r"[A-Za-z0-9]+|[^A-Za-z0-9]+", prompt)
+                corr_parts = re.findall(r"[A-Za-z0-9]+|[^A-Za-z0-9]+", corrected)
+                
+                changes = []
+                matcher = difflib.SequenceMatcher(None, orig_parts, corr_parts)
+                for tag, i1, i2, j1, j2 in matcher.get_opcodes():
+                    if tag in ('replace', 'insert', 'delete'):
+                        src = "".join(orig_parts[i1:i2]).strip()
+                        dst = "".join(corr_parts[j1:j2]).strip()
+                        if src or dst:
+                            changes.append({"from": src or "(none)", "to": dst or "(removed)"})
+                
+                logger.info(f"Ollama Spellcheck: Success. Fixed {len(changes)} tokens.")
+                return {"corrected_prompt": corrected, "changes": changes}
+            
+            logger.warning(f"Ollama Spellcheck: Status {response.status_code}. Falling back.")
+            return self.correct_spelling(prompt)
+        except Exception as e:
+            logger.error(f"Ollama Spellcheck: Error {e}. Falling back.")
+            return self.correct_spelling(prompt)
 
     # ------------------------------------------------------------------ #
     #  Core NLP helpers
@@ -521,7 +571,13 @@ class PromptOptimizer:
     def optimize(self, prompt, style_preset="Photoreal", use_ollama=False):
         """Full 10-stage NLP optimization pipeline with local LLM (Ollama) support."""
         clean_prompt = prompt.strip()
-        spellcheck = self.correct_spelling(clean_prompt)
+        
+        # Stage 1: Spelling AI (Check for LLM preference)
+        if use_ollama:
+            spellcheck = self.ollama_spellcheck(clean_prompt)
+        else:
+            spellcheck = self.correct_spelling(clean_prompt)
+            
         nlp_prompt = spellcheck["corrected_prompt"].strip()
 
         tokens = word_tokenize(nlp_prompt)
@@ -595,7 +651,7 @@ class PromptOptimizer:
 
         # 8. Pipeline stage metadata for UI (Extended to 10 steps)
         pipeline_stages = [
-            {"step": 1, "name": "Spelling AI", "icon": "S", "color": "#f87171", "detail": f"Fixed {len(spellcheck['changes'])} typos", "data": spellcheck['changes']},
+            {"step": 1, "name": "Spelling AI", "icon": "S", "color": "#f87171", "detail": f"{'Ollama Fixed' if use_ollama else 'Fixed'} {len(spellcheck['changes'])} typos", "data": spellcheck['changes']},
             {"step": 2, "name": "Tokenization", "icon": "T", "color": "#6366f1", "detail": f"{len(tokens)} tokens", "data": tokens},
             {"step": 3, "name": "SVO Extraction", "icon": "D", "color": "#8b5cf6", "detail": f"Extracted {len(svo_triplets)} triplets", "data": svo_triplets},
             {"step": 4, "name": "Keyword Ranking", "icon": "K", "color": "#3b82f6", "detail": "TF-IDF Density Analysis", "data": keyword_scores},
