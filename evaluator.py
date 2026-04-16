@@ -50,12 +50,12 @@ class PromptEvaluator:
             print(f"[Evaluator] Loading CLIP ({model_name}) on {self.device}...")
             from transformers import CLIPProcessor, CLIPModel
             self.model = CLIPModel.from_pretrained(
-                model_name, use_safetensors=True
+                model_name, use_safetensors=True, ignore_mismatched_sizes=True
             ).to(self.device)
             self.processor = CLIPProcessor.from_pretrained(model_name)
-            print("[Evaluator] CLIP loaded ✓")
+            print("[Evaluator] CLIP loaded OK")
         except Exception as e:
-            print(f"[Evaluator] CLIP unavailable ({e}) — using fallback mode.")
+            print(f"[Evaluator] CLIP unavailable - using fallback mode.")
             self.fallback_mode = True
 
         # Load STS model
@@ -63,9 +63,9 @@ class PromptEvaluator:
             print("[Evaluator] Loading SentenceTransformer (all-MiniLM-L6-v2)...")
             from sentence_transformers import SentenceTransformer
             self.sts_model = SentenceTransformer('all-MiniLM-L6-v2').to(self.device)
-            print("[Evaluator] SentenceTransformer loaded ✓")
+            print("[Evaluator] SentenceTransformer loaded OK")
         except Exception as e:
-            print(f"[Evaluator] SentenceTransformer unavailable ({e}).")
+            print(f"[Evaluator] SentenceTransformer unavailable.")
             self.sts_model = None
 
         # Load N-gram LM
@@ -529,7 +529,7 @@ if __name__ == "__main__":
     )
 
     print("=" * 65)
-    print("PROMPT EVALUATOR v3.0 — Full Suite Test")
+    print("PROMPT EVALUATOR v3.0 - Full Suite Test")
     print("=" * 65)
 
     sts = evaluator.calculate_sts_score(original, optimized)
