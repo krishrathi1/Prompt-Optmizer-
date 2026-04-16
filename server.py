@@ -1,3 +1,9 @@
+"""
+server.py  —  Prompt Optimizer PRO  (v4.0)
+==========================================
+FastAPI backend with updated /api/generate using the new evaluate_full() suite.
+"""
+
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -19,10 +25,10 @@ from optimizer_engine import PromptOptimizer
 from sd_interface import StableDiffusionClient
 from evaluator import PromptEvaluator
 
-app = FastAPI(title="Prompt Optimizer PRO API")
+app = FastAPI(title="Prompt Optimizer PRO API — v4.0")
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-static_dir = os.path.join(BASE_DIR, "static")
+BASE_DIR    = os.path.dirname(os.path.abspath(__file__))
+static_dir  = os.path.join(BASE_DIR, "static")
 templates_dir = os.path.join(BASE_DIR, "templates")
 
 os.makedirs(static_dir, exist_ok=True)
@@ -31,10 +37,14 @@ os.makedirs(templates_dir, exist_ok=True)
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
 templates = Jinja2Templates(directory=templates_dir)
 
-optimizer = PromptOptimizer()
-sd_client = StableDiffusionClient()
-evaluator = PromptEvaluator()
+optimizer  = PromptOptimizer()
+sd_client  = StableDiffusionClient()
+evaluator  = PromptEvaluator()
 
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  Pydantic Models
+# ─────────────────────────────────────────────────────────────────────────────
 
 class PromptRequest(BaseModel):
     prompt: str
@@ -43,12 +53,16 @@ class PromptRequest(BaseModel):
 
 
 class GenerateRequest(BaseModel):
-    original_prompt: str
+    original_prompt:  str
     optimized_prompt: str
-    negative_prompt: str = ""
-    steps: int = 45
-    cfg_scale: float = 10.0
+    negative_prompt:  str   = ""
+    steps:            int   = 45
+    cfg_scale:        float = 8.0
 
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  Routes
+# ─────────────────────────────────────────────────────────────────────────────
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):
@@ -68,7 +82,10 @@ async def read_root(request: Request):
 async def health_check():
     return {
         "status": "healthy",
+        "version": "4.0",
         "clip_fallback": evaluator.fallback_mode,
+        "sts_available": evaluator.sts_model is not None,
+        "lm_available": evaluator._lm_available,
         "nltk_path": str(nltk.data.path[0]) if hasattr(nltk, 'data') else "unknown",
         "personas": list(optimizer.expert_personas.keys()),
     }
@@ -77,9 +94,12 @@ async def health_check():
 @app.post("/api/optimize")
 async def optimize_prompt(req: PromptRequest):
     try:
-        logger.info(f"Optimizing prompt: {req.prompt[:50]}...")
-        result = optimizer.optimize(req.prompt, style_preset=req.style, use_ollama=req.use_ollama)
-        # Use jsonable_encoder to ensure everything is serializable
+        logger.info(f"[/api/optimize] Prompt: {req.prompt[:60]}...")
+        result = optimizer.optimize(
+            req.prompt,
+            style_preset=req.style,
+            use_ollama=req.use_ollama
+        )
         return JSONResponse(
             content=jsonable_encoder(result),
             headers={"Content-Type": "application/json; charset=utf-8"}
@@ -87,7 +107,7 @@ async def optimize_prompt(req: PromptRequest):
     except Exception as e:
         import traceback
         error_msg = traceback.format_exc()
-        logger.error(f"Optimization Exception:\n{error_msg}")
+        logger.error(f"[/api/optimize] Exception:\n{error_msg}")
         return JSONResponse(
             status_code=500,
             content={"error": "NLP Pipeline Error", "detail": str(e), "traceback": error_msg[:500]}
@@ -99,15 +119,16 @@ async def generate_images(req: GenerateRequest):
     try:
         start_time = time.time()
 
-        logger.info(f"Generating raw image: {req.original_prompt[:60]}")
+        logger.info(f"[/api/generate] Raw: {req.original_prompt[:60]}")
         raw_res = sd_client.generate_image(req.original_prompt)
 
-        logger.info(f"Generating optimized image: {req.optimized_prompt[:60]}")
+        logger.info(f"[/api/generate] Opt: {req.optimized_prompt[:60]}")
         opt_res = sd_client.generate_image(
             req.optimized_prompt,
             negative_prompt=req.negative_prompt,
             steps=req.steps,
             cfg_scale=req.cfg_scale,
+            sampler_name="DPM++ 2M Karras",   # W15 fix
         )
 
         if raw_res['status'] != 'success' or opt_res['status'] != 'success':
@@ -117,46 +138,70 @@ async def generate_images(req: GenerateRequest):
                 content={"error": f"Stable Diffusion offline: {error_msg}. Run with --api flag."},
             )
 
-        raw_clip = evaluator.calculate_clip_score(raw_res['image'], req.original_prompt)
-        opt_clip = evaluator.calculate_clip_score(opt_res['image'], req.optimized_prompt)
-        aesthetic = evaluator.aesthetic_score_heuristic(opt_res['image'])
-        complexity = min(len(req.optimized_prompt.split()) / 5, 10)
-        composite = evaluator.calculate_composite_score(opt_clip, aesthetic, req.optimized_prompt)
-        raw_aesthetic = evaluator.aesthetic_score_heuristic(raw_res['image'])
-        raw_composite = evaluator.calculate_composite_score(raw_clip, raw_aesthetic, req.original_prompt)
+        inference_time = round(time.time() - start_time, 2)
 
-        latency = round(time.time() - start_time, 2)
-        logger.info(f"Done — composite: {composite} | latency: {latency}s")
+        # Full evaluation suite (v3.0)
+        eval_report = evaluator.evaluate_full(
+            original_prompt=req.original_prompt,
+            optimized_prompt=req.optimized_prompt,
+            raw_image=raw_res['image'],
+            opt_image=opt_res['image'],
+            inference_time=inference_time,
+        )
 
         def pil_to_b64(img):
             buf = BytesIO()
             img.save(buf, format="PNG")
             return base64.b64encode(buf.getvalue()).decode("utf-8")
 
+        logger.info(
+            f"[/api/generate] Done — "
+            f"composite improvement: {eval_report['composite']['improvement']} | "
+            f"latency: {inference_time}s"
+        )
+
         return JSONResponse(content={
             "raw_image": pil_to_b64(raw_res['image']),
             "opt_image": pil_to_b64(opt_res['image']),
-            "metrics": {
-                "raw_clip": round(raw_clip * 10, 3),
-                "opt_clip": round(opt_clip * 10, 3),
-                "raw_aesthetic": raw_aesthetic,
-                "aesthetic": aesthetic,
-                "complexity": round(complexity, 2),
-                "composite": composite,
-                "raw_composite": raw_composite,
-                "raw_tokens": len(req.original_prompt.split()),
-                "opt_tokens": len(req.optimized_prompt.split()),
-                "latency": latency,
-            },
+            "evaluation": eval_report,
+            "latency": inference_time,
         })
+
     except Exception as e:
         import traceback
-        logger.error(f"Generate Error: {traceback.format_exc()}")
+        logger.error(f"[/api/generate] Error: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
-def find_free_port(start=8000, end=8100):
-    """Find first available port in range."""
+@app.post("/api/evaluate_text")
+async def evaluate_text_only(req: PromptRequest):
+    """
+    Text-only evaluation endpoint — no SD required.
+    Returns full NLP metric suite for original vs optimized text.
+    """
+    try:
+        opt_result = optimizer.optimize(req.prompt, style_preset=req.style)
+        eval_report = evaluator.evaluate_full(
+            original_prompt=req.prompt,
+            optimized_prompt=opt_result["optimized_prompt"],
+        )
+        return JSONResponse(content=jsonable_encoder({
+            "original": req.prompt,
+            "optimized": opt_result["optimized_prompt"],
+            "optimization": opt_result,
+            "evaluation": eval_report,
+        }))
+    except Exception as e:
+        import traceback
+        logger.error(f"[/api/evaluate_text] Error: {traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  Port discovery & launch
+# ─────────────────────────────────────────────────────────────────────────────
+
+def find_free_port(start: int = 8000, end: int = 8100) -> int:
     import socket
     for port in range(start, end):
         try:
@@ -165,10 +210,10 @@ def find_free_port(start=8000, end=8100):
                 return port
         except OSError:
             continue
-    raise RuntimeError(f"No free port found in range {start}-{end}")
+    raise RuntimeError(f"No free port in {start}-{end}")
 
 
 if __name__ == "__main__":
     port = find_free_port(8000, 8100)
-    logger.info(f"Starting server on http://127.0.0.1:{port}")
+    logger.info(f"Starting Prompt Optimizer PRO v4.0 at http://127.0.0.1:{port}")
     uvicorn.run(app, host="127.0.0.1", port=port, reload=False)
