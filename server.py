@@ -155,5 +155,20 @@ async def generate_images(req: GenerateRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+def find_free_port(start=8000, end=8100):
+    """Find first available port in range."""
+    import socket
+    for port in range(start, end):
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.bind(("127.0.0.1", port))
+                return port
+        except OSError:
+            continue
+    raise RuntimeError(f"No free port found in range {start}-{end}")
+
+
 if __name__ == "__main__":
-    uvicorn.run(app, host="127.0.0.1", port=8000, reload=False)
+    port = find_free_port(8000, 8100)
+    logger.info(f"Starting server on http://127.0.0.1:{port}")
+    uvicorn.run(app, host="127.0.0.1", port=port, reload=False)
