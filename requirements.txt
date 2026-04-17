@@ -10,4 +10,8 @@ scikit-learn
 sentence-transformers
 scipy
 pyspellchecker
-requests
+fastapi
+uvicorn[standard]
+jinja2
+python-multipart
+pandas
