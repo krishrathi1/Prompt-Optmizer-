@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script>
+        mermaid.initialize({ startOnLoad: true, theme: 'neutral' });
+    </script>
+    <style>
+        body { background: white; margin: 0; padding: 20px; overflow: hidden; }
+        #render { width: fit-content; height: fit-content; }
+    </style>
+</head>
+<body>
+    <div id="render">
+        <pre class="mermaid">
+graph TD
+    A([User Input]) --> B[1 · Spelling AI]
+    B --> C[2 · Tokenization]
+    C --> D[3 · Stemming Analysis]
+    D --> E[4 · POS Tagging]
+    E --> F[5 · NER Extraction]
+    F --> G[6 · SVO Analysis]
+    G --> H[7 · NP/VP Chunking]
+    H --> I[8 · TF-IDF Ranking]
+    I --> J[9 · Synonym Logic]
+    J --> K[10 · Genetic Evolution]
+    K --> L[11 · LLM Refinement]
+    L --> M[12 · Vibe & Aspect Mining]
+    M --> N([Optimized Prompt])
+
+    style A fill:#6366f1,color:#fff
+    style N fill:#10b981,color:#fff
+    style K fill:#a855f7,color:#fff
+    style L fill:#f97316,color:#fff
+        </pre>
+    </div>
+</body>
+</html>
