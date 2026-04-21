@@ -71,14 +71,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /* â”€â”€â”€ Colour palette per pipeline step â”€â”€â”€ */
   const STEP_COLORS = [
-    { hex: '#6366f1', rgb: '99,102,241' },
-    { hex: '#8b5cf6', rgb: '139,92,246' },
-    { hex: '#3b82f6', rgb: '59,130,246' },
-    { hex: '#10b981', rgb: '16,185,129' },
-    { hex: '#f59e0b', rgb: '245,158,11' },
-    { hex: '#06b6d4', rgb: '6,182,212' },
-    { hex: '#ec4899', rgb: '236,72,153' },
-    { hex: '#ef4444', rgb: '239,68,68' },
+    { hex: '#6366f1', rgb: '99,102,241' },  // Step 1: Spelling
+    { hex: '#8b5cf6', rgb: '139,92,246' },  // Step 2: Tokenization
+    { hex: '#f59e0b', rgb: '245,158,11' },  // Step 3: Stemming
+    { hex: '#3b82f6', rgb: '59,130,246' },  // Step 4: POS
+    { hex: '#ec4899', rgb: '236,72,153' },  // Step 5: NER
+    { hex: '#06b6d4', rgb: '6,182,212' },  // Step 6: SVO
+    { hex: '#0ea5e9', rgb: '14,165,233' },   // Step 7: Chunking
+    { hex: '#3b82f6', rgb: '59,130,246' },  // Step 8: TF-IDF
+    { hex: '#10b981', rgb: '16,185,129' },  // Step 9: Synonyms
+    { hex: '#a855f7', rgb: '168,85,247' },  // Step 10: Genetic
+    { hex: '#f97316', rgb: '249,115,22' },  // Step 11: LLM
+    { hex: '#10b981', rgb: '16,185,129' },  // Step 12: Vibe
   ];
 
   /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -184,7 +188,10 @@ document.addEventListener('DOMContentLoaded', () => {
       };
 
       renderAll(data, prompt);
-      renderMetrics(data.metrics || buildMetricsFromEvaluation(data.evaluation || {}), data.evaluation || {});
+      
+      const evalData = data.evaluation || {};
+      const metricsData = data.metrics || buildMetricsFromEvaluation(evalData);
+      renderMetrics(evalData, metricsData);
 
       el.resultsWrap.style.display = 'block';
       el.resultsWrap.classList.remove('reveal');
@@ -335,60 +342,75 @@ document.addEventListener('DOMContentLoaded', () => {
         return `<div class="stage-data-tokens">${(Array.isArray(d) ? d : []).map(t =>
           `<span class="stage-token-pill">${escHtml(t)}</span>`).join('')}</div>`;
 
-      case 3: // SVO Extraction
+      case 3: // Stemming Analysis
+        if (!Array.isArray(d) || !d.length) return '<p class="empty-state">No stems extracted.</p>';
+        return `<div>${d.map(s => 
+          `<div class="stage-change-row"><span class="sc-from">${escHtml(s.word)}</span><span class="sc-arrow">\u2192</span><span class="sc-to" style="color:#f59e0b; font-family:monospace">${escHtml(s.stem)}</span></div>`
+        ).join('')}</div>`;
+
+      case 4: // POS Tagging
+        if (!Array.isArray(d) || !d.length) return '<p class="empty-state">No POS tags found.</p>';
+        return `<div class="stage-data-tokens">${d.map(t =>
+          `<span class="stage-token-pill" title="${t.pos}" style="background:rgba(139,92,246,0.1); border-color:rgba(139,92,246,0.2)">${escHtml(t.word)} <small style="opacity:0.6">${escHtml(t.pos)}</small></span>`).join('')}</div>`;
+
+      case 5: // Named Entity Recog.
+        if (!d || Object.values(d).every(v => v.length === 0)) return '<p class="empty-state">No entities detected.</p>';
+        return `<div class="ner-container">${Object.entries(d).map(([k, v]) => v.length ? `
+          <div class="ner-group">
+            <div class="ner-label">${escHtml(k)}</div>
+            <div class="ner-values">${v.map(val => `<span class="ner-pill">${escHtml(val)}</span>`).join('')}</div>
+          </div>` : '').join('')}</div>`;
+
+      case 6: // SVO Extraction
         if (!Array.isArray(d) || !d.length) return '<p class="empty-state">No semantic pathways found.</p>';
-        return `<div class="svo-container">${(Array.isArray(d) ? d : []).map(s => `
+        return `<div class="svo-container">${d.map(s => `
           <div class="svo-card">
             <span class="svo-part subject">${escHtml(s.subject)}</span>
             <span class="svo-arrow">\u2014[ ${escHtml(s.action)} ]\u2192</span>
             <span class="svo-part object">${escHtml(s.object)}</span>
           </div>`).join('')}</div>`;
 
-      case 4: // Keyword Ranking
+      case 7: // NP Chunking
+        if (!d || (!d.np?.length && !d.vp?.length)) return '<p class="empty-state">No phrase chunks found.</p>';
+        return `
+          <div class="ner-group"><div class="ner-label">Noun Phrases</div><div class="stage-data-tokens">${(d.np || []).map(p => `<span class="stage-token-pill" style="background:rgba(14,165,233,0.1);border-color:rgba(14,165,233,0.3)">${escHtml(p)}</span>`).join('')}</div></div>
+          <div class="ner-group" style="margin-top:0.8rem"><div class="ner-label">Verb Phrases</div><div class="stage-data-tokens">${(d.vp || []).map(p => `<span class="stage-token-pill" style="background:rgba(139,92,246,0.1);border-color:rgba(139,92,246,0.3)">${escHtml(p)}</span>`).join('')}</div></div>`;
+
+      case 8: // TF-IDF Keyword Ranking
         return `<div class="keyword-cloud">${Object.entries(d || {}).sort((a,b) => b[1]-a[1]).map(([w, s]) => 
           `<div class="keyword-pill" style="opacity:${0.4 + s * 0.6}; transform:scale(${0.9 + s * 0.2})">
             ${escHtml(w)} <small>${s.toFixed(2)}</small>
           </div>`).join('')}</div>`;
 
-      case 5: // NP Chunking
-        return `<div class="stage-data-tokens">${(Array.isArray(d) ? d : []).map(p =>
-          `<span class="stage-token-pill" style="background:rgba(6,182,212,0.1);border-color:rgba(6,182,212,0.3)">${escHtml(p)}</span>`).join('')}</div>`;
-
-      case 6: // Specificity
-        return `<div class="ladder-container">${(Array.isArray(d) ? d : []).map(l => `
-          <div class="ladder-item">
-            <div class="ladder-word">${escHtml(l.word)}</div>
-            <div class="ladder-path">${l.specificity.ladder.join(' \u2192 ')}</div>
-            <div class="ladder-meta">${l.specificity.depth} levels deep | ${l.specificity.is_generic ? '\u26A0 Generic' : '\u2705 Specific'}</div>
-          </div>`).join('')}</div>`;
-
-      case 7: // Synonym Swapping
-        return `<div>${(Array.isArray(d) ? d : []).map(t =>
-          `<div class="stage-change-row"><span class="sc-from">${escHtml(t.word)}</span><span class="sc-arrow">\u2192</span><span class="sc-to">${escHtml(t.optimized_to)}</span></div>`
+      case 9: // Synonym Swapping
+        if (!Array.isArray(d) || !d.length) return '<p class="empty-state">No synonym substitutions needed.</p>';
+        return `<div>${d.map(t =>
+          `<div class="stage-change-row"><span class="sc-from">${escHtml(t.word)}</span><span class="sc-arrow">\u2192</span><span class="sc-to" style="color:#10b981">${escHtml(t.optimized_to)}</span></div>`
         ).join('')}</div>`;
 
-      case 8: // Genetic Evolution
+      case 10: // Genetic Evolution
         return `
           <div class="ga-status">
-            <div class="ga-metric"><strong>Final Fitness:</strong> ${d?.final_score?.toFixed(2) || 'â€”'}</div>
-            <p style="font-size:0.75rem;color:var(--text-3);margin-top:0.4rem">Evolutionary algorithm optimized for semantic density over 3 generations.</p>
+            <div class="ga-metric"><strong>Final Fitness:</strong> ${d?.fitness?.toFixed(4) || 'â€”'}</div>
+            <div class="ga-metric"><strong>Coherence:</strong> ${d?.lm_scores?.coherence?.toFixed(4) || 'â€”'}</div>
+            <p style="font-size:0.75rem;color:var(--text-3);margin-top:0.4rem">Evolutionary algorithm optimized for semantic density and bigram perplexity.</p>
           </div>`;
 
-      case 9: // Ollama Brainstorm
+      case 11: // LLM Refinement
         if (!d) return '<p class="empty-state">Local LLM generation was bypassed or failed.</p>';
         return `
           <div class="ollama-result-box">
-             <div style="font-size:0.65rem; color:#a855f7; font-weight:800; margin-bottom:0.5rem; text-transform:uppercase;">Expanded Description</div>
+             <div style="font-size:0.65rem; color:#a855f7; font-weight:800; margin-bottom:0.5rem; text-transform:uppercase;">Enhanced Prompt Outline</div>
              <div style="font-family:'JetBrains Mono', monospace; font-size:0.8rem; line-height:1.6; color:var(--text-1)">${escHtml(d)}</div>
           </div>`;
 
-      case 10: // Vibe Analysis
+      case 12: // Vibe Analysis
         return `
           <div style="display:flex;gap:1.5rem;font-size:0.8rem;font-family:'JetBrains Mono',monospace;flex-wrap:wrap">
-            <span>pos <strong style="color:var(--accent)">${(d.scores.pos*100).toFixed(1)}%</strong></span>
-            <span>neg <strong style="color:#f87171">${(d.scores.neg*100).toFixed(1)}%</strong></span>
-            <span>neu <strong style="color:var(--text-2)">${(d.scores.neu*100).toFixed(1)}%</strong></span>
-            <span>compound <strong style="color:${d.color}">${d.scores.compound.toFixed(3)}</strong></span>
+            <span>pos <strong style="color:var(--accent)">${((d.scores?.pos||0)*100).toFixed(1)}%</strong></span>
+            <span>neg <strong style="color:#f87171">${((d.scores?.neg||0)*100).toFixed(1)}%</strong></span>
+            <span>neu <strong style="color:var(--text-2)">${((d.scores?.neu||0)*100).toFixed(1)}%</strong></span>
+            <span>compound <strong style="color:${d.color}">${(d.scores?.compound||0).toFixed(3)}</strong></span>
           </div>
           <p style="font-size:0.8rem;margin-top:0.6rem;color:var(--text-2)">Lighting: <em>${escHtml(d.lighting)}</em></p>`;
 
@@ -686,8 +708,8 @@ document.addEventListener('DOMContentLoaded', () => {
       el.optImageFrame.innerHTML = `<img src="data:image/png;base64,${data.opt_image}" alt="Optimized prompt result" />`;
 
       renderMetrics(
-        data.metrics || buildMetricsFromEvaluation(data.evaluation || {}),
-        data.evaluation || {}
+        data.evaluation || {},
+        data.metrics || buildMetricsFromEvaluation(data.evaluation || {})
       );
 
     } catch (err) {
@@ -698,12 +720,113 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  /* â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• 
      METRICS DASHBOARD
-  â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
-  function renderMetrics(m, evaluation = {}) {
+  â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â•  */
+  function buildMetricsFromEvaluation(evaluation) {
+    const text = evaluation?.text_metrics || {};
+    const image = evaluation?.image_metrics || {};
+    const composite = evaluation?.composite || {};
+    const pipeline = evaluation?.pipeline_accuracy || {};
+
+    return {
+      raw_clip: Number(image?.raw_clip?.score) || 0,
+      opt_clip: Number(image?.opt_clip?.score) || 0,
+      raw_clip_scaled: Number(image?.raw_clip?.scaled) || 0,
+      opt_clip_scaled: Number(image?.opt_clip?.scaled) || 0,
+      raw_clip_available: image?.raw_clip?.score != null,
+      opt_clip_available: image?.opt_clip?.score != null,
+      raw_aesthetic: image?.raw_clip?.score != null ? (Number(image?.raw_aesthetic?.score) || 0) : 0,
+      aesthetic: image?.opt_clip?.score != null ? (Number(image?.opt_aesthetic?.score) || 0) : 0,
+      raw_aesthetic_available: image?.raw_clip?.score != null,
+      opt_aesthetic_available: image?.opt_clip?.score != null,
+      raw_tokens: Number(text?.complexity?.original?.token_count) || 0,
+      opt_tokens: Number(text?.complexity?.optimized?.token_count) || 0,
+      raw_complexity: Number(text?.complexity?.original?.density_score) || 0,
+      opt_complexity: Number(text?.complexity?.optimized?.density_score) || 0,
+      raw_composite: Number(composite?.raw?.score) || 0,
+      composite: Number(composite?.optimized?.score) || 0,
+      improvement: Number(composite?.improvement) || 0,
+      pipeline_accuracy: Number(pipeline?.score_percent) || 0,
+      pipeline_accuracy_label: pipeline?.interpretation || 'unknown',
+      accuracy_curve: Array.isArray(pipeline?.curve_points) ? pipeline.curve_points : [],
+      roc_auc: evaluation?.roc_auc || {},
+      fitness_score: null,
+    };
+  }
+
+  function describeAccuracyCurve(points) {
+    const labels = (Array.isArray(points) ? points : [])
+      .map(p => p?.label)
+      .filter(Boolean);
+    return labels.length ? labels.join(', ') : 'semantic fidelity and output quality';
+  }
+
+  function renderAccuracyCurve(points) {
+    const pathEl = $('accuracyCurvePath');
+    const dotsEl = $('accuracyCurveDots');
+    const safePoints = Array.isArray(points) ? points.filter(p => typeof p?.score === 'number') : [];
+
+    if (!safePoints.length) {
+      pathEl.setAttribute('d', '');
+      dotsEl.innerHTML = '';
+      return;
+    }
+
+    const width = 240;
+    const height = 90;
+    const padX = 12;
+    const padY = 12;
+    const step = safePoints.length === 1 ? 0 : (width - padX * 2) / (safePoints.length - 1);
+    const coords = safePoints.map((point, idx) => {
+      const x = padX + idx * step;
+      const score = Math.max(0, Math.min(point.score, 100));
+      const y = height - padY - (score / 100) * (height - padY * 2);
+      return { x, y, label: point.label, score };
+    });
+
+    let d = `M ${coords[0].x} ${coords[0].y}`;
+    for (let i = 1; i < coords.length; i += 1) {
+      const prev = coords[i - 1];
+      const curr = coords[i];
+      const cx = (prev.x + curr.x) / 2;
+      d += ` Q ${cx} ${prev.y} ${curr.x} ${curr.y}`;
+    }
+    pathEl.setAttribute('d', d);
+
+    dotsEl.innerHTML = coords.map(({ x, y, label, score }) => `
+      <circle cx="${x}" cy="${y}" r="3.5"></circle>
+      <text x="${x}" y="${Math.max(10, y - 8)}">${escHtml(label)}</text>
+      <text x="${x}" y="${Math.min(height - 4, y + 16)}">${score.toFixed(0)}</text>
+    `).join('');
+  }
+
+  function renderRocCurve(roc) {
+    const section = $('rocSection');
+    const pathEl = $('rocCurvePath');
+    const valEl = $('aucVal');
+    const interpEl = $('aucInterpretation');
+    
+    if (!roc || !Array.isArray(roc.curve) || !section) return;
+    
+    section.style.display = 'block';
+    valEl.textContent = (roc.auc || 0).toFixed(4);
+    interpEl.textContent = (roc.interpretation || 'Aggregate') + ' Ensemble Power';
+
+    const size = 300;
+    let d = `M 0,${size}`;
+    roc.curve.forEach(p => {
+      const x = p.fpr * size;
+      const y = size - (p.tpr * size);
+      d += ` L ${x},${y}`;
+    });
+    d += ` L ${size},0 L ${size},${size} Z`;
+    pathEl.setAttribute('d', d);
+  }
+
+  function renderMetrics(evaluation, m) {
     el.metricsSection.style.display = 'block';
-    if (el.evalChartSection) el.evalChartSection.style.display = 'block';
+    if ($('evalChartSection')) $('evalChartSection').style.display = 'block';
 
     const rawClipAvailable = !!m.raw_clip_available;
     const optClipAvailable = !!m.opt_clip_available;
@@ -712,92 +835,47 @@ document.addEventListener('DOMContentLoaded', () => {
     const rawClipScaled = Number.isFinite(m.raw_clip_scaled) ? m.raw_clip_scaled : (m.raw_clip || 0) * 10;
     const optClipScaled = Number.isFinite(m.opt_clip_scaled) ? m.opt_clip_scaled : (m.opt_clip || 0) * 10;
 
-    animateMetricBar(
-      $('clipRawBar'),
-      rawClipAvailable ? rawClipScaled * 10 : 0,
-      $('clipRawVal'),
-      rawClipAvailable ? (m.raw_clip || 0).toFixed(3) : 'Unavailable'
-    );
-    animateMetricBar(
-      $('clipOptBar'),
-      optClipAvailable ? optClipScaled * 10 : 0,
-      $('clipOptVal'),
-      optClipAvailable ? (m.opt_clip || 0).toFixed(3) : 'Unavailable'
-    );
+    // 1. Progress bars
+    animateMetricBar($('clipRawBar'), rawClipAvailable ? rawClipScaled * 10 : 0, $('clipRawVal'), rawClipAvailable ? m.raw_clip.toFixed(3) : 'N/A');
+    animateMetricBar($('clipOptBar'), optClipAvailable ? optClipScaled * 10 : 0, $('clipOptVal'), optClipAvailable ? m.opt_clip.toFixed(3) : 'N/A');
+    
+    animateMetricBar($('aeRawBar'), rawAestheticAvailable ? m.raw_aesthetic * 10 : 0, $('aeRawVal'), rawAestheticAvailable ? m.raw_aesthetic.toFixed(2) : 'N/A');
+    animateMetricBar($('aeOptBar'), optAestheticAvailable ? m.aesthetic * 10 : 0, $('aeOptVal'), optAestheticAvailable ? m.aesthetic.toFixed(2) : 'N/A');
 
-    // Aesthetic (score 0-10)
-    animateMetricBar(
-      $('aeRawBar'),
-      rawAestheticAvailable ? m.raw_aesthetic * 10 : 0,
-      $('aeRawVal'),
-      rawAestheticAvailable ? m.raw_aesthetic.toFixed(2) : 'Unavailable'
-    );
-    animateMetricBar(
-      $('aeOptBar'),
-      optAestheticAvailable ? m.aesthetic * 10 : 0,
-      $('aeOptVal'),
-      optAestheticAvailable ? m.aesthetic.toFixed(2) : 'Unavailable'
-    );
-
-    // Token count
+    // 2. Token counts
     $('tokRawVal').textContent = `${m.raw_tokens} tokens`;
     $('tokOptVal').textContent = `${m.opt_tokens} tokens`;
 
-    // Pipeline accuracy
+    // 3. Composite score
+    const compScore = typeof m.composite === 'number' ? m.composite : 0;
+    const compPct = Math.min(compScore * 10, 100);
+    $('compositeScore').textContent = `${compScore.toFixed(2)}/10`;
+    setTimeout(() => { $('compositeBar').style.width = `${compPct}%`; }, 400);
+
+    // 4. Accuracy Curve
     $('pipelineAccuracyVal').textContent = `${(m.pipeline_accuracy || 0).toFixed(1)}%`;
     $('pipelineAccuracyLabel').textContent = (m.pipeline_accuracy_label || 'unknown').toUpperCase();
     $('pipelineAccuracyFootnote').textContent = `Curved aggregate across ${describeAccuracyCurve(m.accuracy_curve || [])}.`;
     renderAccuracyCurve(m.accuracy_curve || []);
 
-    // Composite score
-    const pct = Math.min(m.composite * 10, 100);
-    $('compositeScore').textContent = `${m.composite.toFixed(2)}/10`;
-    setTimeout(() => { $('compositeBar').style.width = `${pct}%`; }, 100);
+    // 5. Comparison Graph Panel
+    renderEvaluationChart(evaluation, m);
+
+    // 6. ROC/AUC
+    if (m.roc_auc) renderRocCurve(m.roc_auc);
 
     // Improvement banner
     const banner = $('improvementBanner');
-    const clipDiff = m.opt_clip - m.raw_clip;
-    if (clipDiff > 0.01) {
+    const gain = m.opt_clip - m.raw_clip;
+    if (gain > 0.01) {
+      banner.style.display = 'block';
       banner.className = 'improvement-banner positive';
-      banner.textContent = `Pipeline accuracy reached ${(m.pipeline_accuracy || 0).toFixed(1)}% with a CLIP gain of +${clipDiff.toFixed(3)}.`;
+      banner.textContent = `🚀 Semantic alignment improved by +${(gain * 100).toFixed(1)}% through NLP enhancement.`;
     } else {
+      banner.style.display = 'block';
       banner.className = 'improvement-banner neutral';
-      banner.textContent = `Pipeline accuracy reached ${(m.pipeline_accuracy || 0).toFixed(1)}%. Alignment stayed close while richness and structure improved.`;
+      banner.textContent = `Pipeline accuracy reached ${(m.pipeline_accuracy || 0).toFixed(1)}%. Structure refined while maintaining semantic fidelity.`;
     }
-    banner.style.display = 'block';
-
-    renderEvaluationChart(evaluation, m);
-  }
-
-  function buildMetricsFromEvaluation(evaluation) {
-    const text = evaluation?.text_metrics || {};
-    const image = evaluation?.image_metrics || {};
-    const composite = evaluation?.composite || {};
-    const pipeline = evaluation?.pipeline_accuracy || {};
-
-    return {
-      raw_clip: image?.raw_clip?.score ?? 0,
-      opt_clip: image?.opt_clip?.score ?? 0,
-      raw_clip_scaled: image?.raw_clip?.scaled ?? 0,
-      opt_clip_scaled: image?.opt_clip?.scaled ?? 0,
-      raw_clip_available: image?.raw_clip?.score != null,
-      opt_clip_available: image?.opt_clip?.score != null,
-      raw_aesthetic: image?.raw_clip?.score != null ? (image?.raw_aesthetic?.score ?? 0) : 0,
-      aesthetic: image?.opt_clip?.score != null ? (image?.opt_aesthetic?.score ?? 0) : 0,
-      raw_aesthetic_available: image?.raw_clip?.score != null,
-      opt_aesthetic_available: image?.opt_clip?.score != null,
-      raw_tokens: text?.complexity?.original?.token_count ?? 0,
-      opt_tokens: text?.complexity?.optimized?.token_count ?? 0,
-      raw_complexity: text?.complexity?.original?.density_score ?? 0,
-      opt_complexity: text?.complexity?.optimized?.density_score ?? 0,
-      raw_composite: composite?.raw?.score ?? 0,
-      composite: composite?.optimized?.score ?? 0,
-      improvement: composite?.improvement ?? 0,
-      pipeline_accuracy: pipeline?.score_percent ?? 0,
-      pipeline_accuracy_label: pipeline?.interpretation ?? 'unknown',
-      accuracy_curve: Array.isArray(pipeline?.curve_points) ? pipeline.curve_points : [],
-      fitness_score: null,
-    };
   }
 
   function describeAccuracyCurve(points) {

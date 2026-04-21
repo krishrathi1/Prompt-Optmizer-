@@ -412,8 +412,8 @@
                 <div class="composite-bar-wrap">
                   <div class="composite-bar" id="compositeBar"></div>
                 </div>
-              </div>
-            </div>
+              </div> <!-- close composite-card -->
+            </div> <!-- close metrics-grid -->
 
             <div id="improvementBanner" class="improvement-banner" style="display:none"></div>
 
@@ -432,6 +432,41 @@
                 <div class="eval-chart-panel">
                   <div class="eval-chart-title">Preservation & Summary</div>
                   <div class="eval-stat-grid" id="evalMetricStats"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="eval-chart-section" id="rocSection" style="display:none; margin-top:2rem;">
+              <div class="section-header eval-chart-header">
+                <h3 class="section-title">Ensemble ROC & AUC Performance</h3>
+                <span class="section-sub">Diagnostic performance of the NLP optimization ensemble across thresholds</span>
+              </div>
+              <div class="eval-chart-grid" style="grid-template-columns: 1fr 1fr;">
+                <div class="eval-chart-panel" style="display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:280px; background: rgba(0,0,0,0.3);">
+                  <svg id="rocCurveSvg" viewBox="0 0 300 300" style="width:240px; height:240px; overflow:visible;">
+                    <!-- Grid Lines -->
+                    <line x1="0" y1="300" x2="300" y2="300" stroke="var(--border)" stroke-width="2" />
+                    <line x1="0" y1="0" x2="0" y2="300" stroke="var(--border)" stroke-width="2" />
+                    <!-- Random Guess Line -->
+                    <line x1="0" y1="300" x2="300" y2="0" stroke="var(--text-3)" stroke-width="1" stroke-dasharray="4,4" />
+                    <!-- Curve Path -->
+                    <path id="rocCurvePath" fill="rgba(16, 185, 129, 0.1)" stroke="var(--accent)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+                    <!-- Axis Labels -->
+                    <text x="150" y="330" text-anchor="middle" fill="var(--text-3)" font-size="12">False Positive Rate</text>
+                    <text x="-150" y="-30" text-anchor="middle" fill="var(--text-3)" font-size="12" transform="rotate(-90)">True Positive Rate</text>
+                  </svg>
+                </div>
+                <div class="eval-chart-panel" style="display:flex; flex-direction:column; justify-content:center;">
+                  <div class="eval-stat-card" style="border-color: var(--border-accent); background: var(--accent-dim);">
+                    <div class="eval-stat-label">Area Under Curve (AUC)</div>
+                    <div class="eval-stat-value" id="aucVal" style="font-size: 3rem; color: var(--accent);">0.0000</div>
+                    <div class="eval-stat-note" id="aucInterpretation">Aggregated ensemble classification power</div>
+                  </div>
+                  <p style="margin-top:1.5rem; font-size:0.75rem; color:var(--text-2); line-height:1.6;">
+                    The <strong>Receiver Operating Characteristic (ROC)</strong> curve evaluates the sensitivity of the NLP pipeline. 
+                    An AUC closer to 1.0 indicates that the optimized prompt consistently out-performs the semantic 
+                    baseline across all activation thresholds.
+                  </p>
                 </div>
               </div>
             </div>

@@ -85,6 +85,7 @@ def build_metrics_payload(eval_report: dict, fitness_score: float | None = None)
         "pipeline_accuracy": _safe_float(pipeline_accuracy.get("score_percent"), 0.0),
         "pipeline_accuracy_label": pipeline_accuracy.get("interpretation", "unknown"),
         "accuracy_curve": pipeline_accuracy.get("curve_points", []),
+        "roc_auc": eval_report.get("roc_auc", {}),
         "fitness_score": _safe_float(fitness_score, 0.0) if fitness_score is not None else None,
     }
 
