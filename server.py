@@ -38,7 +38,7 @@ app.mount("/static", StaticFiles(directory=static_dir), name="static")
 templates = Jinja2Templates(directory=templates_dir)
 
 optimizer  = PromptOptimizer()
-sd_client  = StableDiffusionClient()
+sd_client  = StableDiffusionClient(os.getenv("SD_BASE_URL", "http://127.0.0.1:7860"))
 evaluator  = PromptEvaluator()
 
 
@@ -62,6 +62,7 @@ def build_metrics_payload(eval_report: dict, fitness_score: float | None = None)
     raw_aesthetic = image_metrics.get("raw_aesthetic", {})
     opt_aesthetic = image_metrics.get("opt_aesthetic", {})
     complexity = text_metrics.get("complexity", {})
+    image_available = raw_clip.get("score") is not None or opt_clip.get("score") is not None
 
     return {
         "raw_clip": _safe_float(raw_clip.get("score"), 0.0),
@@ -70,8 +71,10 @@ def build_metrics_payload(eval_report: dict, fitness_score: float | None = None)
         "opt_clip_scaled": _safe_float(opt_clip.get("scaled"), 0.0),
         "raw_clip_available": raw_clip.get("score") is not None,
         "opt_clip_available": opt_clip.get("score") is not None,
-        "raw_aesthetic": _safe_float(raw_aesthetic.get("score"), 0.0),
-        "aesthetic": _safe_float(opt_aesthetic.get("score"), 0.0),
+        "raw_aesthetic": _safe_float(raw_aesthetic.get("score"), 0.0) if image_available else 0.0,
+        "aesthetic": _safe_float(opt_aesthetic.get("score"), 0.0) if image_available else 0.0,
+        "raw_aesthetic_available": image_available,
+        "opt_aesthetic_available": image_available,
         "raw_tokens": int(complexity.get("original", {}).get("token_count", 0)),
         "opt_tokens": int(complexity.get("optimized", {}).get("token_count", 0)),
         "raw_complexity": _safe_float(complexity.get("original", {}).get("density_score"), 0.0),
@@ -105,6 +108,10 @@ class GenerateRequest(BaseModel):
     fitness_score:    float | None = None
 
 
+class ConfigRequest(BaseModel):
+    sd_base_url: str
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 #  Routes
 # ─────────────────────────────────────────────────────────────────────────────
@@ -125,14 +132,42 @@ async def read_root(request: Request):
 
 @app.get("/api/health")
 async def health_check():
+    sd_health = sd_client.check_health(timeout=3)
     return {
         "status": "healthy",
         "version": "4.0",
         "clip_fallback": evaluator.fallback_mode,
         "sts_available": evaluator.sts_model is not None,
         "lm_available": evaluator._lm_available,
+        "sd_base_url": sd_health["base_url"],
+        "sd_available": sd_health["ok"],
+        "sd_error": sd_health["error"],
         "nltk_path": str(nltk.data.path[0]) if hasattr(nltk, 'data') else "unknown",
         "personas": list(optimizer.expert_personas.keys()),
+    }
+
+
+@app.get("/api/config")
+async def get_config():
+    sd_health = sd_client.check_health(timeout=3)
+    return {
+        "sd_base_url": sd_health["base_url"],
+        "sd_available": sd_health["ok"],
+        "sd_error": sd_health["error"],
+    }
+
+
+@app.post("/api/config")
+async def update_config(req: ConfigRequest):
+    candidate = req.sd_base_url.strip()
+    if not candidate:
+        raise HTTPException(status_code=400, detail="sd_base_url is required")
+    sd_client.set_base_url(candidate)
+    sd_health = sd_client.check_health(timeout=5)
+    return {
+        "sd_base_url": sd_health["base_url"],
+        "sd_available": sd_health["ok"],
+        "sd_error": sd_health["error"],
     }
 
 
@@ -145,8 +180,17 @@ async def optimize_prompt(req: PromptRequest):
             style_preset=req.style,
             use_ollama=req.use_ollama
         )
+        eval_report = evaluator.evaluate_full(
+            original_prompt=req.prompt,
+            optimized_prompt=result["optimized_prompt"],
+            fitness_score=result.get("fitness_score"),
+        )
         return JSONResponse(
-            content=jsonable_encoder(result),
+            content=jsonable_encoder({
+                **result,
+                "evaluation": eval_report,
+                "metrics": build_metrics_payload(eval_report, result.get("fitness_score")),
+            }),
             headers={"Content-Type": "application/json; charset=utf-8"}
         )
     except Exception as e:

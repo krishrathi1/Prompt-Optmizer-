@@ -10,6 +10,9 @@ document.addEventListener('DOMContentLoaded', () => {
     promptInput:    $('promptInput'),
     optimizeBtn:    $('optimizeBtn'),
     stylePreset:    $('stylePreset'),
+    sdBaseUrl:      $('sdBaseUrl'),
+    saveSdConfigBtn:$('saveSdConfigBtn'),
+    sdConfigStatus: $('sdConfigStatus'),
     charCount:      $('charCount'),
     wordCount:      $('wordCount'),
     statusDot:      $('statusDot'),
@@ -86,17 +89,41 @@ document.addEventListener('DOMContentLoaded', () => {
       const r = await fetch('/api/health');
       if (r.ok) {
         const d = await r.json();
-        el.statusDot.className = 'status-dot ok';
-        el.statusLabel.textContent = d.clip_fallback
-          ? 'Online (CLIP fallback mode)'
-          : 'Online â€” all systems ready';
+        el.sdBaseUrl.value = d.sd_base_url || el.sdBaseUrl.value;
+        updateSdStatus(d.sd_available, d.sd_error, d.sd_base_url);
+        el.statusDot.className = `status-dot ${d.sd_available ? 'ok' : 'error'}`;
+        el.statusLabel.textContent = d.sd_available
+          ? (d.clip_fallback ? 'Online (CLIP fallback mode)' : 'Online — all systems ready')
+          : 'API online — Stable Diffusion unavailable';
       } else throw new Error();
     } catch {
       el.statusDot.className = 'status-dot error';
       el.statusLabel.textContent = 'API unreachable';
+      updateSdStatus(false, 'Prompt Optimizer API is unreachable.', el.sdBaseUrl.value);
     }
   }
   healthCheck();
+
+  el.saveSdConfigBtn.addEventListener('click', async () => {
+    const sdBaseUrl = el.sdBaseUrl.value.trim();
+    if (!sdBaseUrl) return;
+    setBtn(el.saveSdConfigBtn, true, 'Saving…');
+    try {
+      const resp = await fetch('/api/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sd_base_url: sdBaseUrl }),
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.detail || 'Failed to update SD URL');
+      updateSdStatus(data.sd_available, data.sd_error, data.sd_base_url);
+      healthCheck();
+    } catch (err) {
+      updateSdStatus(false, err.message, sdBaseUrl);
+    } finally {
+      setBtn(el.saveSdConfigBtn, false, 'Save SD URL');
+    }
+  });
 
   /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
      INPUT: live counters
@@ -157,6 +184,7 @@ document.addEventListener('DOMContentLoaded', () => {
       };
 
       renderAll(data, prompt);
+      renderMetrics(data.metrics || buildMetricsFromEvaluation(data.evaluation || {}), data.evaluation || {});
 
       el.resultsWrap.style.display = 'block';
       el.resultsWrap.classList.remove('reveal');
@@ -198,10 +226,17 @@ document.addEventListener('DOMContentLoaded', () => {
     renderVariants(safe.variants, safe.selected_variant);
     renderShield(safe.negative_prompt);
     renderFinalPrompts(originalPrompt, safe.optimized_prompt);
-    // Reset image section
-    el.imageSection.style.display = 'none';
-    el.metricsSection.style.display = 'none';
-    if (el.evalChartSection) el.evalChartSection.style.display = 'none';
+    const hasEvaluation = !!data?.evaluation;
+    el.imageSection.style.display = hasEvaluation ? 'block' : 'none';
+    if (hasEvaluation) {
+      el.imgRawPrompt.textContent = originalPrompt;
+      el.imgOptPrompt.textContent = safe.optimized_prompt;
+      el.rawImageFrame.innerHTML = '<div class="image-placeholder">Text-only evaluation available. Generate images to compare visuals.</div>';
+      el.optImageFrame.innerHTML = '<div class="image-placeholder enhanced">Metrics are already visible below. Image metrics will unlock after generation.</div>';
+    } else {
+      el.metricsSection.style.display = 'none';
+      if (el.evalChartSection) el.evalChartSection.style.display = 'none';
+    }
   }
 
   /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -672,6 +707,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const rawClipAvailable = !!m.raw_clip_available;
     const optClipAvailable = !!m.opt_clip_available;
+    const rawAestheticAvailable = !!m.raw_aesthetic_available;
+    const optAestheticAvailable = !!m.opt_aesthetic_available;
     const rawClipScaled = Number.isFinite(m.raw_clip_scaled) ? m.raw_clip_scaled : (m.raw_clip || 0) * 10;
     const optClipScaled = Number.isFinite(m.opt_clip_scaled) ? m.opt_clip_scaled : (m.opt_clip || 0) * 10;
 
@@ -689,8 +726,18 @@ document.addEventListener('DOMContentLoaded', () => {
     );
 
     // Aesthetic (score 0-10)
-    animateMetricBar($('aeRawBar'), m.raw_aesthetic * 10, $('aeRawVal'), m.raw_aesthetic.toFixed(2));
-    animateMetricBar($('aeOptBar'), m.aesthetic * 10, $('aeOptVal'), m.aesthetic.toFixed(2));
+    animateMetricBar(
+      $('aeRawBar'),
+      rawAestheticAvailable ? m.raw_aesthetic * 10 : 0,
+      $('aeRawVal'),
+      rawAestheticAvailable ? m.raw_aesthetic.toFixed(2) : 'Unavailable'
+    );
+    animateMetricBar(
+      $('aeOptBar'),
+      optAestheticAvailable ? m.aesthetic * 10 : 0,
+      $('aeOptVal'),
+      optAestheticAvailable ? m.aesthetic.toFixed(2) : 'Unavailable'
+    );
 
     // Token count
     $('tokRawVal').textContent = `${m.raw_tokens} tokens`;
@@ -735,8 +782,10 @@ document.addEventListener('DOMContentLoaded', () => {
       opt_clip_scaled: image?.opt_clip?.scaled ?? 0,
       raw_clip_available: image?.raw_clip?.score != null,
       opt_clip_available: image?.opt_clip?.score != null,
-      raw_aesthetic: image?.raw_aesthetic?.score ?? 0,
-      aesthetic: image?.opt_aesthetic?.score ?? 0,
+      raw_aesthetic: image?.raw_clip?.score != null ? (image?.raw_aesthetic?.score ?? 0) : 0,
+      aesthetic: image?.opt_clip?.score != null ? (image?.opt_aesthetic?.score ?? 0) : 0,
+      raw_aesthetic_available: image?.raw_clip?.score != null,
+      opt_aesthetic_available: image?.opt_clip?.score != null,
       raw_tokens: text?.complexity?.original?.token_count ?? 0,
       opt_tokens: text?.complexity?.optimized?.token_count ?? 0,
       raw_complexity: text?.complexity?.original?.density_score ?? 0,
@@ -919,6 +968,15 @@ document.addEventListener('DOMContentLoaded', () => {
   function animateMetricBar(barEl, pct, valEl, label) {
     setTimeout(() => { barEl.style.width = `${Math.min(pct, 100)}%`; }, 100);
     if (valEl) valEl.textContent = label;
+  }
+
+  function updateSdStatus(isAvailable, error, url) {
+    if (!el.sdConfigStatus) return;
+    if (url) el.sdBaseUrl.value = url;
+    el.sdConfigStatus.className = `config-status ${isAvailable ? 'ok' : 'error'}`;
+    el.sdConfigStatus.textContent = isAvailable
+      ? `Connected to ${url}`
+      : `Unavailable: ${error || 'Could not reach Stable Diffusion API.'}`;
   }
 
   /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•

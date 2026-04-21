@@ -131,6 +131,14 @@
         <p class="ollama-desc">Requires Ollama running on port 11434 (llama3.2 recommended).</p>
       </div>
 
+      <div class="sidebar-block sd-config-card">
+        <div class="sidebar-label">Stable Diffusion API</div>
+        <label class="config-label" for="sdBaseUrl">Base URL</label>
+        <input id="sdBaseUrl" class="config-input" type="text" value="http://127.0.0.1:7860" spellcheck="false" />
+        <button id="saveSdConfigBtn" class="config-btn">Save SD URL</button>
+        <div class="config-status" id="sdConfigStatus">Checking connection…</div>
+      </div>
+
       <!-- Settings (revealed after optimize) -->
       <div class="sidebar-block" id="settingsBlock" style="display:none">
         <div class="sidebar-label">SD Settings</div>

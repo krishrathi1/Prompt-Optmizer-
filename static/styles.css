@@ -774,6 +774,24 @@ body {
   box-shadow: 0 10px 40px rgba(0,0,0,0.5);
 }
 .image-frame img { width: 100%; height: 100%; object-fit: cover; animation: fadeIn 0.5s ease; }
+.image-placeholder {
+  width: 100%;
+  height: 100%;
+  min-height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 1.2rem;
+  color: var(--text-2);
+  font-size: 0.82rem;
+  line-height: 1.6;
+  background: linear-gradient(135deg, rgba(148,163,184,0.08) 0%, rgba(15,23,42,0.85) 100%);
+}
+.image-placeholder.enhanced {
+  color: #a7f3d0;
+  background: linear-gradient(135deg, rgba(16,185,129,0.10) 0%, rgba(15,23,42,0.85) 100%);
+}
 .vs-divider {
   align-self: center;
   font-size: 0.7rem;
@@ -1196,6 +1214,70 @@ body {
 .ollama-name { font-weight: 700; font-size: 0.85rem; color: #a855f7; }
 .ollama-status { font-size: 0.65rem; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.05em; }
 .ollama-desc { font-size: 0.68rem; color: var(--text-3); line-height: 1.4; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 0.75rem; }
+
+.sd-config-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.config-label {
+  font-size: 0.68rem;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.config-input {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.04);
+  color: var(--text-1);
+  padding: 0.7rem 0.8rem;
+  font-size: 0.8rem;
+  font-family: 'JetBrains Mono', monospace;
+}
+.config-input:focus {
+  outline: none;
+  border-color: var(--border-accent);
+  box-shadow: 0 0 0 3px rgba(16,185,129,0.08);
+}
+.config-btn {
+  border: 1px solid var(--border-accent);
+  background: rgba(16,185,129,0.1);
+  color: var(--accent);
+  border-radius: 10px;
+  padding: 0.65rem 0.85rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.config-btn:hover:not(:disabled) {
+  background: rgba(16,185,129,0.16);
+}
+.config-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.config-status {
+  font-size: 0.75rem;
+  line-height: 1.5;
+  padding: 0.7rem 0.8rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  color: var(--text-2);
+  background: rgba(255,255,255,0.03);
+}
+.config-status.ok {
+  color: var(--accent);
+  border-color: var(--border-accent);
+  background: var(--accent-dim);
+}
+.config-status.error {
+  color: #fca5a5;
+  border-color: rgba(239,68,68,0.25);
+  background: rgba(127,29,29,0.18);
+}
 
 /* Switch Toggle Component */
 .switch { position: relative; display: inline-block; width: 36px; height: 20px; flex-shrink: 0; }
