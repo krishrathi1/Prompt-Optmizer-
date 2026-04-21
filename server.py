@@ -104,13 +104,27 @@ class GenerateRequest(BaseModel):
     original_prompt:  str
     optimized_prompt: str
     negative_prompt:  str   = ""
-    steps:            int   = 45
-    cfg_scale:        float = 8.0
+    steps:            int   = 20
+    cfg_scale:        float = 7.0
     fitness_score:    float | None = None
 
 
 class ConfigRequest(BaseModel):
     sd_base_url: str
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  CLEANUP HANDLERS (Suppress Browser Noise)
+# ─────────────────────────────────────────────────────────────────────────────
+
+@app.get("/favicon.ico")
+async def favicon():
+    return JSONResponse(content={})
+
+@app.get("/.well-known/appspecific/com.chrome.devtools.json")
+async def chrome_devtools_json():
+    """Silences browser diagnostic requests to keep logs clean."""
+    return JSONResponse(content={})
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -218,7 +232,7 @@ async def generate_images(req: GenerateRequest):
             negative_prompt=req.negative_prompt,
             steps=req.steps,
             cfg_scale=req.cfg_scale,
-            sampler_name="DPM++ 2M Karras",   # W15 fix
+            sampler_name="DPM++ 2M",
         )
 
         if raw_res['status'] != 'success' or opt_res['status'] != 'success':

@@ -712,6 +712,7 @@ class PromptEvaluator:
                 "improvement": round(opt_composite["score"] - raw_composite["score"], 2),
             },
             "pipeline_accuracy": pipeline_accuracy,
+            "roc_auc": roc_auc,
         }
 
     # ──────────────────────────────────────────────────────────────────────────

@@ -62,6 +62,11 @@ document.addEventListener('DOMContentLoaded', () => {
     optImageFrame:  $('optImageFrame'),
     metricsSection: $('metricsSection'),
     evalChartSection:$('evalChartSection'),
+    preRenderBenchmark: $('preRenderBenchmark'),
+    textMetricBars: $('textMetricBars'),
+    textMetricStats: $('textMetricStats'),
+    aucValMini:     $('aucValMini'),
+    aucInterpMini:  $('aucInterpMini'),
     // Tooltip
     tokenTooltip:   $('tokenTooltip'),
   };
@@ -233,17 +238,12 @@ document.addEventListener('DOMContentLoaded', () => {
     renderVariants(safe.variants, safe.selected_variant);
     renderShield(safe.negative_prompt);
     renderFinalPrompts(originalPrompt, safe.optimized_prompt);
-    const hasEvaluation = !!data?.evaluation;
-    el.imageSection.style.display = hasEvaluation ? 'block' : 'none';
-    if (hasEvaluation) {
-      el.imgRawPrompt.textContent = originalPrompt;
-      el.imgOptPrompt.textContent = safe.optimized_prompt;
-      el.rawImageFrame.innerHTML = '<div class="image-placeholder">Text-only evaluation available. Generate images to compare visuals.</div>';
-      el.optImageFrame.innerHTML = '<div class="image-placeholder enhanced">Metrics are already visible below. Image metrics will unlock after generation.</div>';
-    } else {
-      el.metricsSection.style.display = 'none';
-      if (el.evalChartSection) el.evalChartSection.style.display = 'none';
-    }
+
+    // Step 9: Show Pre-Render Benchmark by default
+    el.preRenderBenchmark.style.display = 'block';
+    
+    // Step 11: Hide multimodal until generate
+    el.imageSection.style.display = 'none';
   }
 
   /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -592,9 +592,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }).join('');
   }
 
-  /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  /* â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• 
      GENETIC VARIANTS
-  â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+  â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â•  */
   function renderVariants(variants, winnerIdx) {
     variants = Array.isArray(variants) ? variants : [];
     if (!variants.length) {
@@ -632,9 +632,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-     NEGATIVE SHIELD
-  â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+  /* ─── NEGATIVE SHIELD ─── */
   function renderShield(negPrompt) {
     el.shieldTags.innerHTML = negPrompt.split(',')
       .map(t => t.trim()).filter(Boolean)
@@ -642,9 +640,7 @@ document.addEventListener('DOMContentLoaded', () => {
       .join('');
   }
 
-  /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-     FINAL PROMPTS + COPY
-  â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+  /* ─── FINAL PROMPTS + COPY ─── */
   function renderFinalPrompts(original, optimized) {
     el.finalOriginal.textContent = original;
     el.finalOptimized.textContent = optimized;
@@ -665,9 +661,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-     GENERATE IMAGES
-  â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+  /* ─── GENERATE IMAGES ─── */
   el.generateBtn.addEventListener('click', async () => {
     if (!session.optimized) return;
 
@@ -707,10 +701,9 @@ document.addEventListener('DOMContentLoaded', () => {
       el.rawImageFrame.innerHTML = `<img src="data:image/png;base64,${data.raw_image}" alt="Raw prompt result" />`;
       el.optImageFrame.innerHTML = `<img src="data:image/png;base64,${data.opt_image}" alt="Optimized prompt result" />`;
 
-      renderMetrics(
-        data.evaluation || {},
-        data.metrics || buildMetricsFromEvaluation(data.evaluation || {})
-      );
+      const evalData = data.evaluation || {};
+      const metricsData = data.metrics || buildMetricsFromEvaluation(evalData);
+      renderMetrics(evalData, metricsData);
 
     } catch (err) {
       el.rawImageFrame.innerHTML = `<div style="padding:2rem;color:#f87171;font-size:0.8rem">Request failed: ${escHtml(err.message)}</div>`;
@@ -720,9 +713,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  /* â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• 
-     METRICS DASHBOARD
-  â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â•  */
+  /* ─── METRICS DASHBOARD ─── */
   function buildMetricsFromEvaluation(evaluation) {
     const text = evaluation?.text_metrics || {};
     const image = evaluation?.image_metrics || {};
@@ -736,10 +727,10 @@ document.addEventListener('DOMContentLoaded', () => {
       opt_clip_scaled: Number(image?.opt_clip?.scaled) || 0,
       raw_clip_available: image?.raw_clip?.score != null,
       opt_clip_available: image?.opt_clip?.score != null,
-      raw_aesthetic: image?.raw_clip?.score != null ? (Number(image?.raw_aesthetic?.score) || 0) : 0,
-      aesthetic: image?.opt_clip?.score != null ? (Number(image?.opt_aesthetic?.score) || 0) : 0,
       raw_aesthetic_available: image?.raw_clip?.score != null,
       opt_aesthetic_available: image?.opt_clip?.score != null,
+      raw_aesthetic: image?.raw_clip?.score != null ? (Number(image?.raw_aesthetic?.score) || 0) : 0,
+      aesthetic: image?.opt_clip?.score != null ? (Number(image?.opt_aesthetic?.score) || 0) : 0,
       raw_tokens: Number(text?.complexity?.original?.token_count) || 0,
       opt_tokens: Number(text?.complexity?.optimized?.token_count) || 0,
       raw_complexity: Number(text?.complexity?.original?.density_score) || 0,
@@ -755,64 +746,16 @@ document.addEventListener('DOMContentLoaded', () => {
     };
   }
 
-  function describeAccuracyCurve(points) {
-    const labels = (Array.isArray(points) ? points : [])
-      .map(p => p?.label)
-      .filter(Boolean);
-    return labels.length ? labels.join(', ') : 'semantic fidelity and output quality';
-  }
-
-  function renderAccuracyCurve(points) {
-    const pathEl = $('accuracyCurvePath');
-    const dotsEl = $('accuracyCurveDots');
-    const safePoints = Array.isArray(points) ? points.filter(p => typeof p?.score === 'number') : [];
-
-    if (!safePoints.length) {
-      pathEl.setAttribute('d', '');
-      dotsEl.innerHTML = '';
-      return;
-    }
-
-    const width = 240;
-    const height = 90;
-    const padX = 12;
-    const padY = 12;
-    const step = safePoints.length === 1 ? 0 : (width - padX * 2) / (safePoints.length - 1);
-    const coords = safePoints.map((point, idx) => {
-      const x = padX + idx * step;
-      const score = Math.max(0, Math.min(point.score, 100));
-      const y = height - padY - (score / 100) * (height - padY * 2);
-      return { x, y, label: point.label, score };
-    });
-
-    let d = `M ${coords[0].x} ${coords[0].y}`;
-    for (let i = 1; i < coords.length; i += 1) {
-      const prev = coords[i - 1];
-      const curr = coords[i];
-      const cx = (prev.x + curr.x) / 2;
-      d += ` Q ${cx} ${prev.y} ${curr.x} ${curr.y}`;
-    }
-    pathEl.setAttribute('d', d);
-
-    dotsEl.innerHTML = coords.map(({ x, y, label, score }) => `
-      <circle cx="${x}" cy="${y}" r="3.5"></circle>
-      <text x="${x}" y="${Math.max(10, y - 8)}">${escHtml(label)}</text>
-      <text x="${x}" y="${Math.min(height - 4, y + 16)}">${score.toFixed(0)}</text>
-    `).join('');
-  }
-
   function renderRocCurve(roc) {
     const section = $('rocSection');
     const pathEl = $('rocCurvePath');
     const valEl = $('aucVal');
     const interpEl = $('aucInterpretation');
-    
     if (!roc || !Array.isArray(roc.curve) || !section) return;
-    
     section.style.display = 'block';
     valEl.textContent = (roc.auc || 0).toFixed(4);
-    interpEl.textContent = (roc.interpretation || 'Aggregate') + ' Ensemble Power';
-
+    interpEl.textContent = (roc.interpretation || 'Aggregate') + ' Lifecycle Performance';
+    
     const size = 300;
     let d = `M 0,${size}`;
     roc.curve.forEach(p => {
@@ -822,84 +765,98 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     d += ` L ${size},0 L ${size},${size} Z`;
     pathEl.setAttribute('d', d);
+
+    const spark = $('aucSparkline');
+    if (spark) {
+      let sd = `M 0,35`;
+      roc.curve.forEach((p, idx) => {
+        const x = (idx / (roc.curve.length - 1)) * 200;
+        const y = 35 - (p.tpr * 30);
+        sd += ` L ${x},${y}`;
+      });
+      spark.setAttribute('d', sd);
+    }
   }
 
   function renderMetrics(evaluation, m) {
-    el.metricsSection.style.display = 'block';
-    if ($('evalChartSection')) $('evalChartSection').style.display = 'block';
+    renderTextMetrics(evaluation, m);
+    if (m.raw_clip_available || m.opt_clip_available) {
+      el.metricsSection.style.display = 'block';
+      const rawClipScaled = Number.isFinite(m.raw_clip_scaled) ? m.raw_clip_scaled : (m.raw_clip || 0) * 10;
+      const optClipScaled = Number.isFinite(m.opt_clip_scaled) ? m.opt_clip_scaled : (m.opt_clip || 0) * 10;
+      animateMetricBar($('clipRawBar'), m.raw_clip_available ? rawClipScaled * 10 : 0, $('clipRawVal'), m.raw_clip_available ? m.raw_clip.toFixed(3) : 'N/A');
+      animateMetricBar($('clipOptBar'), m.opt_clip_available ? optClipScaled * 10 : 0, $('clipOptVal'), m.opt_clip_available ? m.opt_clip.toFixed(3) : 'N/A');
+      animateMetricBar($('aeRawBar'), m.raw_aesthetic_available ? m.raw_aesthetic * 10 : 0, $('aeRawVal'), m.raw_aesthetic_available ? m.raw_aesthetic.toFixed(2) : 'N/A');
+      animateMetricBar($('aeOptBar'), m.opt_aesthetic_available ? m.aesthetic * 10 : 0, $('aeOptVal'), m.opt_aesthetic_available ? m.aesthetic.toFixed(2) : 'N/A');
+      $('compositeScore').textContent = `${(m.composite || 0).toFixed(2)}/10`;
+      setTimeout(() => { if ($('compositeBar')) $('compositeBar').style.width = `${Math.min((m.composite || 0) * 10, 100)}%`; }, 400);
+    }
+  }
 
-    const rawClipAvailable = !!m.raw_clip_available;
-    const optClipAvailable = !!m.opt_clip_available;
-    const rawAestheticAvailable = !!m.raw_aesthetic_available;
-    const optAestheticAvailable = !!m.opt_aesthetic_available;
-    const rawClipScaled = Number.isFinite(m.raw_clip_scaled) ? m.raw_clip_scaled : (m.raw_clip || 0) * 10;
-    const optClipScaled = Number.isFinite(m.opt_clip_scaled) ? m.opt_clip_scaled : (m.opt_clip || 0) * 10;
-
-    // 1. Progress bars
-    animateMetricBar($('clipRawBar'), rawClipAvailable ? rawClipScaled * 10 : 0, $('clipRawVal'), rawClipAvailable ? m.raw_clip.toFixed(3) : 'N/A');
-    animateMetricBar($('clipOptBar'), optClipAvailable ? optClipScaled * 10 : 0, $('clipOptVal'), optClipAvailable ? m.opt_clip.toFixed(3) : 'N/A');
-    
-    animateMetricBar($('aeRawBar'), rawAestheticAvailable ? m.raw_aesthetic * 10 : 0, $('aeRawVal'), rawAestheticAvailable ? m.raw_aesthetic.toFixed(2) : 'N/A');
-    animateMetricBar($('aeOptBar'), optAestheticAvailable ? m.aesthetic * 10 : 0, $('aeOptVal'), optAestheticAvailable ? m.aesthetic.toFixed(2) : 'N/A');
-
-    // 2. Token counts
+  function renderTextMetrics(evaluation, m) {
+    const text = evaluation?.text_metrics || {};
+    const roc = evaluation?.roc_auc || {};
     $('tokRawVal').textContent = `${m.raw_tokens} tokens`;
     $('tokOptVal').textContent = `${m.opt_tokens} tokens`;
-
-    // 3. Composite score
-    const compScore = typeof m.composite === 'number' ? m.composite : 0;
-    const compPct = Math.min(compScore * 10, 100);
-    $('compositeScore').textContent = `${compScore.toFixed(2)}/10`;
-    setTimeout(() => { $('compositeBar').style.width = `${compPct}%`; }, 400);
-
-    // 4. Accuracy Curve
     $('pipelineAccuracyVal').textContent = `${(m.pipeline_accuracy || 0).toFixed(1)}%`;
     $('pipelineAccuracyLabel').textContent = (m.pipeline_accuracy_label || 'unknown').toUpperCase();
-    $('pipelineAccuracyFootnote').textContent = `Curved aggregate across ${describeAccuracyCurve(m.accuracy_curve || [])}.`;
+    $('pipelineAccuracyFootnote').textContent = `Aggregate across ${describeAccuracyCurve(m.accuracy_curve || [])}.`;
     renderAccuracyCurve(m.accuracy_curve || []);
 
-    // 5. Comparison Graph Panel
-    renderEvaluationChart(evaluation, m);
+    if (roc.auc) {
+      if ($('aucValMini')) $('aucValMini').textContent = roc.auc.toFixed(4);
+      if ($('aucInterpMini')) $('aucInterpMini').textContent = (roc.interpretation || 'Stable') + ' Quality';
+      renderRocCurve(roc);
+    }
 
-    // 6. ROC/AUC
-    if (m.roc_auc) renderRocCurve(m.roc_auc);
-
-    // Improvement banner
-    const banner = $('improvementBanner');
-    const gain = m.opt_clip - m.raw_clip;
-    if (gain > 0.01) {
-      banner.style.display = 'block';
-      banner.className = 'improvement-banner positive';
-      banner.textContent = `🚀 Semantic alignment improved by +${(gain * 100).toFixed(1)}% through NLP enhancement.`;
-    } else {
-      banner.style.display = 'block';
-      banner.className = 'improvement-banner neutral';
-      banner.textContent = `Pipeline accuracy reached ${(m.pipeline_accuracy || 0).toFixed(1)}%. Structure refined while maintaining semantic fidelity.`;
+    const flu = text.fluency || {};
+    const vocab = text.vocabulary_richness || {};
+    const cplx = text.complexity || {};
+    const textStats = [
+      { label: 'Semantic Fidelity', raw: (text.sts_score?.score || 0) * 10, opt: 10, max: 10 },
+      { label: 'Syntactic Density', raw: cplx.original?.density_score || 0, opt: cplx.optimized?.density_score || 0, max: 10 },
+      { label: 'Lexical Richness', raw: (vocab.original?.ttr || 0) * 10, opt: (vocab.optimized?.ttr || 0) * 10, max: 10 },
+      { label: 'Linguistic Fluency', raw: (flu.original?.coherence || 0) * 10, opt: (flu.optimized?.coherence || 0) * 10, max: 10 },
+    ];
+    if ($('textMetricBars')) {
+        $('textMetricBars').innerHTML = textStats.map(s => {
+          const rawPct = (s.raw / s.max) * 100, optPct = (s.opt / s.max) * 100;
+          return `<div class="eval-bar-row">
+            <div class="eval-bar-head">
+              <span class="eval-bar-label">${escHtml(s.label)}</span>
+              <div class="eval-bar-values">
+                <span title="Original">${s.raw.toFixed(1)}</span>
+                <span style="color:var(--accent); margin-left:12px;" title="NLP-Enhanced">${s.opt.toFixed(1)}</span>
+              </div>
+            </div>
+            <div class="eval-bar-pair">
+              <div class="eval-bar-track"><div class="eval-bar-fill raw" style="width:${rawPct}%"></div></div>
+              <div class="eval-bar-track"><div class="eval-bar-fill opt" style="width:${optPct}%"></div></div>
+            </div>
+          </div>`;
+        }).join('');
+    }
+    if ($('textMetricStats')) {
+        const statCards = [
+          { label: 'STS Score', value: (text.sts_score?.score || 0).toFixed(3) },
+          { label: 'Preservation', value: text.sts_score?.interpretation || 'High' },
+          { label: 'Hapax Ratio', value: (vocab.optimized?.hapax_ratio || 0).toFixed(2) },
+          { label: 'Bigram Ppx', value: (flu.optimized?.bigram_perplexity || 0).toFixed(1) },
+        ];
+        $('textMetricStats').innerHTML = statCards.map(c => `<div class="eval-stat-card"><div class="eval-stat-label">${c.label}</div><div class="eval-stat-value" style="font-size:1.2rem">${c.value}</div></div>`).join('');
     }
   }
 
   function describeAccuracyCurve(points) {
-    const labels = (Array.isArray(points) ? points : [])
-      .map(p => p?.label)
-      .filter(Boolean);
+    const labels = (Array.isArray(points) ? points : []).map(p => p?.label).filter(Boolean);
     return labels.length ? labels.join(', ') : 'semantic fidelity and output quality';
   }
 
   function renderAccuracyCurve(points) {
-    const pathEl = $('accuracyCurvePath');
-    const dotsEl = $('accuracyCurveDots');
+    const pathEl = $('accuracyCurvePath'), dotsEl = $('accuracyCurveDots');
     const safePoints = Array.isArray(points) ? points.filter(p => typeof p?.score === 'number') : [];
-
-    if (!safePoints.length) {
-      pathEl.setAttribute('d', '');
-      dotsEl.innerHTML = '';
-      return;
-    }
-
-    const width = 240;
-    const height = 90;
-    const padX = 12;
-    const padY = 12;
+    if (!safePoints.length || !pathEl || !dotsEl) return;
+    const width = 240, height = 90, padX = 12, padY = 12;
     const step = safePoints.length === 1 ? 0 : (width - padX * 2) / (safePoints.length - 1);
     const coords = safePoints.map((point, idx) => {
       const x = padX + idx * step;
@@ -907,143 +864,17 @@ document.addEventListener('DOMContentLoaded', () => {
       const y = height - padY - (score / 100) * (height - padY * 2);
       return { x, y, label: point.label, score };
     });
-
     let d = `M ${coords[0].x} ${coords[0].y}`;
     for (let i = 1; i < coords.length; i += 1) {
-      const prev = coords[i - 1];
-      const curr = coords[i];
-      const cx = (prev.x + curr.x) / 2;
+      const prev = coords[i - 1], curr = coords[i], cx = (prev.x + curr.x) / 2;
       d += ` Q ${cx} ${prev.y} ${curr.x} ${curr.y}`;
     }
     pathEl.setAttribute('d', d);
-
-    dotsEl.innerHTML = coords.map(({ x, y, label, score }) => `
-      <circle cx="${x}" cy="${y}" r="3.5"></circle>
-      <text x="${x}" y="${Math.max(10, y - 8)}">${escHtml(label)}</text>
-      <text x="${x}" y="${Math.min(height - 4, y + 16)}">${score.toFixed(0)}</text>
-    `).join('');
-  }
-
-  function renderEvaluationChart(evaluation, metrics) {
-    const barsHost = $('evalMetricBars');
-    const statsHost = $('evalMetricStats');
-    if (!barsHost || !statsHost) return;
-
-    const text = evaluation?.text_metrics || {};
-    const image = evaluation?.image_metrics || {};
-    const composite = evaluation?.composite || {};
-    const pipeline = evaluation?.pipeline_accuracy || {};
-
-    const fluency = text?.fluency || {};
-    const vocab = text?.vocabulary_richness || {};
-    const complexity = text?.complexity || {};
-    const overlap = text?.ngram_overlap || {};
-    const sts = text?.sts_score || {};
-
-    const barMetrics = [
-      {
-        label: 'CLIP',
-        raw: metrics?.raw_clip_scaled ?? ((image?.raw_clip?.scaled) ?? 0),
-        opt: metrics?.opt_clip_scaled ?? ((image?.opt_clip?.scaled) ?? 0),
-        max: 10,
-      },
-      {
-        label: 'Aesthetic',
-        raw: metrics?.raw_aesthetic ?? (image?.raw_aesthetic?.score ?? 0),
-        opt: metrics?.aesthetic ?? (image?.opt_aesthetic?.score ?? 0),
-        max: 10,
-      },
-      {
-        label: 'Complexity',
-        raw: metrics?.raw_complexity ?? (complexity?.original?.density_score ?? 0),
-        opt: metrics?.opt_complexity ?? (complexity?.optimized?.density_score ?? 0),
-        max: 10,
-      },
-      {
-        label: 'Coherence',
-        raw: (fluency?.original?.coherence ?? 0) * 10,
-        opt: (fluency?.optimized?.coherence ?? 0) * 10,
-        max: 10,
-      },
-      {
-        label: 'TTR',
-        raw: (vocab?.original?.ttr ?? 0) * 10,
-        opt: (vocab?.optimized?.ttr ?? 0) * 10,
-        max: 10,
-      },
-      {
-        label: 'Hapax',
-        raw: (vocab?.original?.hapax_ratio ?? 0) * 10,
-        opt: (vocab?.optimized?.hapax_ratio ?? 0) * 10,
-        max: 10,
-      },
-      {
-        label: 'Composite',
-        raw: metrics?.raw_composite ?? (composite?.raw?.score ?? 0),
-        opt: metrics?.composite ?? (composite?.optimized?.score ?? 0),
-        max: 10,
-      },
-    ];
-
-    barsHost.innerHTML = barMetrics.map(metric => {
-      const rawPct = Math.max(0, Math.min((metric.raw / metric.max) * 100, 100));
-      const optPct = Math.max(0, Math.min((metric.opt / metric.max) * 100, 100));
-      return `
-        <div class="eval-bar-row">
-          <div class="eval-bar-head">
-            <span class="eval-bar-label">${escHtml(metric.label)}</span>
-            <span class="eval-bar-values">${metric.raw.toFixed(2)} / ${metric.opt.toFixed(2)}</span>
-          </div>
-          <div class="eval-bar-pair">
-            <div class="eval-bar-track">
-              <div class="eval-bar-fill raw" style="width:${rawPct}%"></div>
-            </div>
-            <div class="eval-bar-track">
-              <div class="eval-bar-fill opt" style="width:${optPct}%"></div>
-            </div>
-          </div>
-        </div>
-      `;
-    }).join('');
-
-    const statCards = [
-      {
-        label: 'STS',
-        value: sts?.score != null ? sts.score.toFixed(3) : '—',
-        note: sts?.interpretation || 'semantic preservation',
-      },
-      {
-        label: 'BLEU Overlap',
-        value: overlap?.geometric_mean != null ? overlap.geometric_mean.toFixed(3) : '—',
-        note: 'preservation balance',
-      },
-      {
-        label: 'Bigram PP',
-        value: fluency?.optimized?.bigram_perplexity != null ? fluency.optimized.bigram_perplexity.toFixed(1) : '—',
-        note: 'lower is better',
-      },
-      {
-        label: 'GA Fitness',
-        value: typeof metrics?.fitness_score === 'number' ? metrics.fitness_score.toFixed(2) : '—',
-        note: 'evolution stage score',
-      },
-      {
-        label: 'Pipeline Accuracy',
-        value: pipeline?.score_percent != null ? `${pipeline.score_percent.toFixed(1)}%` : `${(metrics?.pipeline_accuracy || 0).toFixed(1)}%`,
-        note: pipeline?.interpretation || 'aggregate',
-      },
-    ];
-
-    statsHost.innerHTML = statCards.map(card => `
-      <div class="eval-stat-card">
-        <div class="eval-stat-label">${escHtml(card.label)}</div>
-        <div class="eval-stat-value">${escHtml(card.value)}</div>
-        <div class="eval-stat-note">${escHtml(card.note)}</div>
-      </div>
-    `).join('');
+    dotsEl.innerHTML = coords.map(({ x, y, label, score }) => `<circle cx="${x}" cy="${y}" r="3.5"></circle><text x="${x}" y="${Math.max(10, y - 8)}">${escHtml(label)}</text><text x="${x}" y="${Math.min(height - 4, y + 16)}">${score.toFixed(0)}</text>`).join('');
   }
 
   function animateMetricBar(barEl, pct, valEl, label) {
+    if (!barEl) return;
     setTimeout(() => { barEl.style.width = `${Math.min(pct, 100)}%`; }, 100);
     if (valEl) valEl.textContent = label;
   }
@@ -1057,20 +888,27 @@ document.addEventListener('DOMContentLoaded', () => {
       : `Unavailable: ${error || 'Could not reach Stable Diffusion API.'}`;
   }
 
+  /* ──────────────────────────────────────────────────────────────────────────
+     UTILITIES
+  ────────────────────────────────────────────────────────────────────────── */
+
   /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
      UTILITIES
   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
   function setBtn(btn, loading, text) {
     btn.disabled = loading;
-    // keep the SVG icon â€” just swap text node
-    const svg = btn.querySelector('svg');
+    // Find the original icon (not a spinner)
+    const originalIcon = btn.querySelector('svg:not(.status-spinner)');
     btn.textContent = text;
-    if (svg) btn.prepend(svg);
-    if (loading && btn === el.optimizeBtn) {
+    if (originalIcon) btn.prepend(originalIcon);
+    
+    if (loading) {
       const spinner = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      spinner.classList.add('status-spinner');
       spinner.setAttribute('width', '16'); spinner.setAttribute('height', '16');
       spinner.setAttribute('viewBox', '0 0 24 24');
       spinner.style.animation = 'spin 1s linear infinite';
+      spinner.style.marginRight = '8px';
       spinner.innerHTML = '<circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.3)" stroke-width="3" fill="none"/><path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round"/>';
       btn.prepend(spinner);
     }
