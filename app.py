@@ -6,6 +6,21 @@ from sd_interface import StableDiffusionClient
 from evaluator import PromptEvaluator
 import pandas as pd
 
+
+def _metric_number(metric, key="score", default=None):
+    if isinstance(metric, dict):
+        value = metric.get(key, default)
+    else:
+        value = metric
+    return default if value is None else value
+
+
+def _metric_label(metric, key="score", fmt="{:.3f}", unavailable="Unavailable"):
+    value = _metric_number(metric, key=key, default=None)
+    if value is None:
+        return unavailable
+    return fmt.format(value)
+
 # Page Config
 st.set_page_config(page_title="Prompt Optimizer & Enhancer", page_icon="✨", layout="wide")
 
@@ -59,6 +74,11 @@ with col1:
         if user_input:
             with st.spinner("Analyzing and optimizing..."):
                 opt_result = st.session_state.optimizer.optimize(user_input)
+                text_evaluation = st.session_state.evaluator.evaluate_full(
+                    original_prompt=user_input,
+                    optimized_prompt=opt_result['optimized_prompt'],
+                    fitness_score=opt_result.get('fitness_score'),
+                )
                 
                 # Full State Update
                 st.session_state.results = {
@@ -71,7 +91,8 @@ with col1:
                     "fitness_score": opt_result.get('fitness_score', 0.0),
                     "noun_phrases": opt_result.get('noun_phrases', []),
                     "entities": opt_result.get('entities', ""),
-                    "svo_triplets": opt_result.get('svo_triplets', [])
+                    "svo_triplets": opt_result.get('svo_triplets', []),
+                    "evaluation": text_evaluation,
                 }
                 
                 # Update Session History
@@ -79,6 +100,11 @@ with col1:
                 
             st.success("NLP Optimization Complete!")
             st.code(f"Original: {user_input}\nOptimized: {opt_result['optimized_prompt']}", language="markdown")
+            st.info(
+                f"Pipeline accuracy (text-only): "
+                f"{text_evaluation['pipeline_accuracy']['score_percent']:.1f}% "
+                f"· {text_evaluation['pipeline_accuracy']['interpretation']}"
+            )
             
             with st.expander("🔍 See NLP Pipeline Steps"):
                 st.write("### 🏷️ Part-of-Speech & Keywords")
@@ -132,23 +158,20 @@ with col2:
                 )
                 
                 if raw_gen['status'] == 'success' and opt_gen['status'] == 'success':
-                    # Evaluation
-                    raw_clip = st.session_state.evaluator.calculate_clip_score(raw_gen['image'], results['original'])
-                    opt_clip = st.session_state.evaluator.calculate_clip_score(opt_gen['image'], results['optimized'])
+                    eval_report = st.session_state.evaluator.evaluate_full(
+                        original_prompt=results['original'],
+                        optimized_prompt=results['optimized'],
+                        raw_image=raw_gen['image'],
+                        opt_image=opt_gen['image'],
+                        inference_time=raw_gen['inference_time'] + opt_gen['inference_time'],
+                        fitness_score=results.get('fitness_score'),
+                    )
                     
                     st.session_state.results['raw_img'] = raw_gen['image']
                     st.session_state.results['opt_img'] = opt_gen['image']
                     st.session_state.results['raw_latency'] = raw_gen['inference_time']
                     st.session_state.results['opt_latency'] = opt_gen['inference_time']
-                    st.session_state.results['raw_clip'] = raw_clip
-                    st.session_state.results['opt_clip'] = opt_clip
-                    
-                    # New STS Metric
-                    sts_score = st.session_state.evaluator.calculate_sts_score(results['original'], results['optimized'])
-                    st.session_state.results['sts_score'] = sts_score
-                    
-                    st.session_state.results['raw_tokens'] = st.session_state.evaluator.get_token_count(results['original'])
-                    st.session_state.results['opt_tokens'] = st.session_state.evaluator.get_token_count(results['optimized'])
+                    st.session_state.results['evaluation'] = eval_report
                 else:
                     st.error("Failed to connect to Stable Diffusion. Is the --api flag enabled?")
         else:
@@ -158,6 +181,11 @@ with col2:
 if 'raw_img' in st.session_state.results:
     st.divider()
     res = st.session_state.results
+    evaluation = res.get('evaluation', {})
+    text_metrics = evaluation.get('text_metrics', {})
+    image_metrics = evaluation.get('image_metrics', {})
+    composite = evaluation.get('composite', {})
+    pipeline_accuracy = evaluation.get('pipeline_accuracy', {})
     
     st.subheader("📊 Comparison Dashboard")
     
@@ -174,20 +202,103 @@ if 'raw_img' in st.session_state.results:
 
     # Metrics Table
     st.subheader("🧠 Performance Metrics")
+    raw_clip = image_metrics.get('raw_clip', {})
+    opt_clip = image_metrics.get('opt_clip', {})
+    sts_score = text_metrics.get('sts_score', {})
+    complexity = text_metrics.get('complexity', {})
     metrics_data = {
-        "Metric": ["CLIP Score (Similarity)", "STS Score (Meaning Preservation)", "Token Count", "Inference Time (s)", "GA Fitness Score"],
-        "Raw Prompt": [res['raw_clip'], "1.000 (Baseline)", res['raw_tokens'], f"{res['raw_latency']:.2f}", "N/A"],
-        "Optimized Prompt": [res['opt_clip'], res.get('sts_score', 0.0), res['opt_tokens'], f"{res['opt_latency']:.2f}", f"{res.get('fitness_score', 0.0):.2f}"]
+        "Metric": [
+            "CLIP Score (Similarity)",
+            "STS Score (Meaning Preservation)",
+            "Token Count",
+            "Inference Time (s)",
+            "GA Fitness Score",
+            "Pipeline Accuracy",
+        ],
+        "Raw Prompt": [
+            _metric_label(raw_clip, fmt="{:.3f}"),
+            "Baseline",
+            complexity.get('original', {}).get('token_count', len(res['original'].split())),
+            f"{res['raw_latency']:.2f}",
+            "N/A",
+            "N/A",
+        ],
+        "Optimized Prompt": [
+            _metric_label(opt_clip, fmt="{:.3f}"),
+            _metric_label(sts_score, fmt="{:.3f}"),
+            complexity.get('optimized', {}).get('token_count', len(res['optimized'].split())),
+            f"{res['opt_latency']:.2f}",
+            f"{res.get('fitness_score', 0.0):.2f}",
+            f"{pipeline_accuracy.get('score_percent', 0.0):.1f}%",
+        ]
     }
     df = pd.DataFrame(metrics_data)
     st.table(df)
+
+    chart_metrics = pd.DataFrame([
+        {
+            "Metric": "CLIP",
+            "Raw": _metric_number(raw_clip, key="scaled", default=0.0) or 0.0,
+            "Optimized": _metric_number(opt_clip, key="scaled", default=0.0) or 0.0,
+        },
+        {
+            "Metric": "Aesthetic",
+            "Raw": image_metrics.get('raw_aesthetic', {}).get('score', 0.0),
+            "Optimized": image_metrics.get('opt_aesthetic', {}).get('score', 0.0),
+        },
+        {
+            "Metric": "Complexity",
+            "Raw": complexity.get('original', {}).get('density_score', 0.0),
+            "Optimized": complexity.get('optimized', {}).get('density_score', 0.0),
+        },
+        {
+            "Metric": "Coherence",
+            "Raw": text_metrics.get('fluency', {}).get('original', {}).get('coherence', 0.0) * 10,
+            "Optimized": text_metrics.get('fluency', {}).get('optimized', {}).get('coherence', 0.0) * 10,
+        },
+        {
+            "Metric": "TTR",
+            "Raw": text_metrics.get('vocabulary_richness', {}).get('original', {}).get('ttr', 0.0) * 10,
+            "Optimized": text_metrics.get('vocabulary_richness', {}).get('optimized', {}).get('ttr', 0.0) * 10,
+        },
+        {
+            "Metric": "Hapax",
+            "Raw": text_metrics.get('vocabulary_richness', {}).get('original', {}).get('hapax_ratio', 0.0) * 10,
+            "Optimized": text_metrics.get('vocabulary_richness', {}).get('optimized', {}).get('hapax_ratio', 0.0) * 10,
+        },
+        {
+            "Metric": "Composite",
+            "Raw": composite.get('raw', {}).get('score', 0.0),
+            "Optimized": composite.get('optimized', {}).get('score', 0.0),
+        },
+    ])
+    st.caption("Visual comparison of the main evaluation metrics on a common 0-10 scale.")
+    st.bar_chart(chart_metrics.set_index("Metric"))
+
+    curve_points = pipeline_accuracy.get('curve_points', [])
+    if curve_points:
+        curve_df = pd.DataFrame(curve_points).rename(columns={"label": "Component", "score": "Accuracy"})
+        st.caption(
+            f"Pipeline accuracy: {pipeline_accuracy.get('score_percent', 0.0):.1f}% "
+            f"({pipeline_accuracy.get('interpretation', 'unknown')})"
+        )
+        st.line_chart(curve_df.set_index("Component"))
     
     # Comparison Summary
-    clip_diff = res['opt_clip'] - res['raw_clip']
+    raw_clip_score = _metric_number(raw_clip, default=0.0) or 0.0
+    opt_clip_score = _metric_number(opt_clip, default=0.0) or 0.0
+    clip_diff = opt_clip_score - raw_clip_score
     if clip_diff > 0:
-        st.success(f"🚀 **Improvement Detected!** The optimized prompt achieved a **{clip_diff:.4f}** higher CLIP score than the raw input.")
+        st.success(
+            f"🚀 **Improvement Detected!** The optimized prompt achieved a "
+            f"**{clip_diff:.4f}** higher CLIP score and a pipeline accuracy of "
+            f"**{pipeline_accuracy.get('score_percent', 0.0):.1f}%**."
+        )
     else:
-        st.info("The scores are similar, but the visual complexity is noticeably higher in the optimized version.")
+        st.info(
+            f"The CLIP scores are similar, but the pipeline accuracy is "
+            f"**{pipeline_accuracy.get('score_percent', 0.0):.1f}%** with higher text richness and structure."
+        )
 
 # Pipeline Visualization (Static)
 st.divider()

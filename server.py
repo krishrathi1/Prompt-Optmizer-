@@ -42,6 +42,50 @@ sd_client  = StableDiffusionClient()
 evaluator  = PromptEvaluator()
 
 
+def _safe_float(value, default: float = 0.0) -> float:
+    try:
+        if value is None:
+            return default
+        return float(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def build_metrics_payload(eval_report: dict, fitness_score: float | None = None) -> dict:
+    text_metrics = eval_report.get("text_metrics", {})
+    image_metrics = eval_report.get("image_metrics", {})
+    composite = eval_report.get("composite", {})
+    pipeline_accuracy = eval_report.get("pipeline_accuracy", {})
+
+    raw_clip = image_metrics.get("raw_clip", {})
+    opt_clip = image_metrics.get("opt_clip", {})
+    raw_aesthetic = image_metrics.get("raw_aesthetic", {})
+    opt_aesthetic = image_metrics.get("opt_aesthetic", {})
+    complexity = text_metrics.get("complexity", {})
+
+    return {
+        "raw_clip": _safe_float(raw_clip.get("score"), 0.0),
+        "opt_clip": _safe_float(opt_clip.get("score"), 0.0),
+        "raw_clip_scaled": _safe_float(raw_clip.get("scaled"), 0.0),
+        "opt_clip_scaled": _safe_float(opt_clip.get("scaled"), 0.0),
+        "raw_clip_available": raw_clip.get("score") is not None,
+        "opt_clip_available": opt_clip.get("score") is not None,
+        "raw_aesthetic": _safe_float(raw_aesthetic.get("score"), 0.0),
+        "aesthetic": _safe_float(opt_aesthetic.get("score"), 0.0),
+        "raw_tokens": int(complexity.get("original", {}).get("token_count", 0)),
+        "opt_tokens": int(complexity.get("optimized", {}).get("token_count", 0)),
+        "raw_complexity": _safe_float(complexity.get("original", {}).get("density_score"), 0.0),
+        "opt_complexity": _safe_float(complexity.get("optimized", {}).get("density_score"), 0.0),
+        "raw_composite": _safe_float(composite.get("raw", {}).get("score"), 0.0),
+        "composite": _safe_float(composite.get("optimized", {}).get("score"), 0.0),
+        "improvement": _safe_float(composite.get("improvement"), 0.0),
+        "pipeline_accuracy": _safe_float(pipeline_accuracy.get("score_percent"), 0.0),
+        "pipeline_accuracy_label": pipeline_accuracy.get("interpretation", "unknown"),
+        "accuracy_curve": pipeline_accuracy.get("curve_points", []),
+        "fitness_score": _safe_float(fitness_score, 0.0) if fitness_score is not None else None,
+    }
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 #  Pydantic Models
 # ─────────────────────────────────────────────────────────────────────────────
@@ -58,6 +102,7 @@ class GenerateRequest(BaseModel):
     negative_prompt:  str   = ""
     steps:            int   = 45
     cfg_scale:        float = 8.0
+    fitness_score:    float | None = None
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -147,6 +192,7 @@ async def generate_images(req: GenerateRequest):
             raw_image=raw_res['image'],
             opt_image=opt_res['image'],
             inference_time=inference_time,
+            fitness_score=req.fitness_score,
         )
 
         def pil_to_b64(img):
@@ -164,6 +210,7 @@ async def generate_images(req: GenerateRequest):
             "raw_image": pil_to_b64(raw_res['image']),
             "opt_image": pil_to_b64(opt_res['image']),
             "evaluation": eval_report,
+            "metrics": build_metrics_payload(eval_report, req.fitness_score),
             "latency": inference_time,
         })
 
@@ -184,12 +231,14 @@ async def evaluate_text_only(req: PromptRequest):
         eval_report = evaluator.evaluate_full(
             original_prompt=req.prompt,
             optimized_prompt=opt_result["optimized_prompt"],
+            fitness_score=opt_result.get("fitness_score"),
         )
         return JSONResponse(content=jsonable_encoder({
             "original": req.prompt,
             "optimized": opt_result["optimized_prompt"],
             "optimization": opt_result,
             "evaluation": eval_report,
+            "metrics": build_metrics_payload(eval_report, opt_result.get("fitness_score")),
         }))
     except Exception as e:
         import traceback

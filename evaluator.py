@@ -388,7 +388,11 @@ class PromptEvaluator:
         """
         # CLIP component (0-10)
         clip_val = 0.0
-        if clip_result and not clip_result.get("is_fallback") and clip_result.get("score"):
+        if (
+            clip_result
+            and not clip_result.get("is_fallback")
+            and clip_result.get("score") is not None
+        ):
             clip_val = clip_result["score"] * 10
 
         # Aesthetic (already 0-10)
@@ -427,6 +431,141 @@ class PromptEvaluator:
         }
 
     # ──────────────────────────────────────────────────────────────────────────
+    #  Pipeline Accuracy  (Curved aggregate quality signal)
+    # ──────────────────────────────────────────────────────────────────────────
+
+    @staticmethod
+    def _clamp(value: float, low: float = 0.0, high: float = 1.0) -> float:
+        return max(low, min(high, value))
+
+    @staticmethod
+    def _safe_float(value, default: float = 0.0) -> float:
+        try:
+            if value is None:
+                return default
+            return float(value)
+        except (TypeError, ValueError):
+            return default
+
+    def _sigmoid_curve(self, value: float, midpoint: float, steepness: float) -> float:
+        value = self._safe_float(value)
+        return 1.0 / (1.0 + math.exp(-steepness * (value - midpoint)))
+
+    def _saturation_curve(self, value: float, rate: float = 3.0) -> float:
+        value = self._clamp(self._safe_float(value))
+        return 1.0 - math.exp(-rate * value)
+
+    def _bell_curve(self, value: float, center: float, spread: float) -> float:
+        value = self._safe_float(value)
+        spread = max(spread, 1e-6)
+        return math.exp(-((value - center) ** 2) / (2 * (spread ** 2)))
+
+    def calculate_pipeline_accuracy(
+        self,
+        sts_result: Dict,
+        overlap_result: Dict,
+        orig_fluency: Dict,
+        opt_fluency: Dict,
+        orig_lexical: Dict,
+        opt_lexical: Dict,
+        orig_complexity: Dict,
+        opt_complexity: Dict,
+        raw_clip: Optional[Dict] = None,
+        opt_clip: Optional[Dict] = None,
+        raw_aesthetic: Optional[Dict] = None,
+        opt_aesthetic: Optional[Dict] = None,
+        raw_composite: Optional[Dict] = None,
+        opt_composite: Optional[Dict] = None,
+        fitness_score: Optional[float] = None,
+    ) -> Dict:
+        """
+        Aggregate pipeline quality into a single 0–100 score using the
+        project's most relevant evaluation metrics from the core suite.
+        """
+        sts_score = self._safe_float(sts_result.get("score"), 0.0)
+        opt_coherence = self._safe_float(opt_fluency.get("coherence"), 0.0)
+        overlap_score = self._safe_float(overlap_result.get("geometric_mean"), 0.0)
+        opt_ttr = self._safe_float(opt_lexical.get("ttr"), 0.0)
+        opt_hapax = self._safe_float(opt_lexical.get("hapax_ratio"), 0.0)
+        opt_density = self._safe_float(opt_complexity.get("density_score"), 0.0) / 10.0
+        semantic_curve = self._saturation_curve(sts_score, rate=4.0)
+        coherence_curve = self._sigmoid_curve(opt_coherence, midpoint=0.58, steepness=7.5)
+        richness_curve = (
+            0.55 * self._sigmoid_curve(opt_ttr, midpoint=0.62, steepness=8.5) +
+            0.45 * self._sigmoid_curve(opt_hapax, midpoint=0.55, steepness=8.0)
+        )
+        overlap_curve = self._bell_curve(overlap_score, center=0.55, spread=0.22)
+        complexity_curve = self._sigmoid_curve(opt_density, midpoint=0.48, steepness=7.0)
+
+        component_specs = [
+            ("sts_score", "STS", semantic_curve, 0.24),
+            ("coherence", "Coherence", coherence_curve, 0.16),
+            ("richness", "TTR/Hapax", richness_curve, 0.16),
+            ("bleu_overlap", "BLEU", overlap_curve, 0.10),
+            ("complexity", "Complexity", complexity_curve, 0.10),
+        ]
+
+        if fitness_score is not None:
+            fitness_curve = self._saturation_curve(self._safe_float(fitness_score) / 10.0, rate=4.0)
+            component_specs.append(("ga_fitness", "GA Fitness", fitness_curve, 0.10))
+
+        opt_clip_score = self._safe_float((opt_clip or {}).get("score"), 0.0)
+        raw_clip_score = self._safe_float((raw_clip or {}).get("score"), 0.0)
+        opt_aesthetic_score = self._safe_float((opt_aesthetic or {}).get("score"), 0.0) / 10.0
+        raw_composite_score = self._safe_float((raw_composite or {}).get("score"), 0.0) / 10.0
+        opt_composite_score = self._safe_float((opt_composite or {}).get("score"), 0.0) / 10.0
+
+        has_image_grounding = (
+            (opt_clip or {}).get("score") is not None or
+            (opt_aesthetic or {}).get("score") is not None
+        )
+        if has_image_grounding:
+            image_curve = (
+                0.35 * self._sigmoid_curve(opt_clip_score, midpoint=0.28, steepness=14.0) +
+                0.20 * self._sigmoid_curve(
+                    opt_clip_score - raw_clip_score, midpoint=0.015, steepness=24.0
+                ) +
+                0.20 * self._sigmoid_curve(opt_aesthetic_score, midpoint=0.58, steepness=8.0) +
+                0.25 * self._sigmoid_curve(opt_composite_score, midpoint=0.58, steepness=8.0)
+            )
+            component_specs.append(("image_quality", "CLIP/Aesthetic", image_curve, 0.14))
+
+        total_weight = sum(weight for _, _, _, weight in component_specs) or 1.0
+        weighted_score = sum(score * weight for _, _, score, weight in component_specs) / total_weight
+        score_percent = round(weighted_score * 100.0, 2)
+
+        if score_percent >= 85:
+            interpretation = "excellent"
+        elif score_percent >= 70:
+            interpretation = "strong"
+        elif score_percent >= 55:
+            interpretation = "moderate"
+        else:
+            interpretation = "weak"
+
+        components = {}
+        curve_points = []
+        for key, label, score, weight in component_specs:
+            curved_score = round(self._clamp(score) * 100.0, 2)
+            normalized_weight = round(weight / total_weight, 4)
+            components[key] = {
+                "label": label,
+                "score_percent": curved_score,
+                "weight": normalized_weight,
+            }
+            curve_points.append({
+                "label": label,
+                "score": curved_score,
+            })
+
+        return {
+            "score_percent": score_percent,
+            "interpretation": interpretation,
+            "components": components,
+            "curve_points": curve_points,
+        }
+
+    # ──────────────────────────────────────────────────────────────────────────
     #  Full Evaluation Suite
     # ──────────────────────────────────────────────────────────────────────────
 
@@ -437,6 +576,7 @@ class PromptEvaluator:
         raw_image=None,
         opt_image=None,
         inference_time: Optional[float] = None,
+        fitness_score: Optional[float] = None,
     ) -> Dict:
         """
         Run all metrics and return a unified evaluation report.
@@ -467,6 +607,23 @@ class PromptEvaluator:
         opt_composite = self.calculate_composite_score(
             opt_clip, opt_aes, opt_cplx, opt_flu, inference_time
         )
+        pipeline_accuracy = self.calculate_pipeline_accuracy(
+            sts_result=sts,
+            overlap_result=overlap,
+            orig_fluency=orig_flu,
+            opt_fluency=opt_flu,
+            orig_lexical=orig_lex,
+            opt_lexical=opt_lex,
+            orig_complexity=orig_cplx,
+            opt_complexity=opt_cplx,
+            raw_clip=raw_clip,
+            opt_clip=opt_clip,
+            raw_aesthetic=raw_aes,
+            opt_aesthetic=opt_aes,
+            raw_composite=raw_composite,
+            opt_composite=opt_composite,
+            fitness_score=fitness_score,
+        )
 
         return {
             "text_metrics": {
@@ -496,6 +653,7 @@ class PromptEvaluator:
                 "optimized": opt_composite,
                 "improvement": round(opt_composite["score"] - raw_composite["score"], 2),
             },
+            "pipeline_accuracy": pipeline_accuracy,
         }
 
     # ──────────────────────────────────────────────────────────────────────────
