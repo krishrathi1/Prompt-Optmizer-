@@ -234,7 +234,60 @@ This replaces the v3.x formula which was simply `word_count + brackets × 1.5 + 
 
 ---
 
-## 10. Summary — Full Metrics Table
+## 10. Pipeline Accuracy — Curved Aggregate
+
+**Module:** `evaluator.py → calculate_pipeline_accuracy()`
+**Course Topic:** T10 — Applications (multi-metric evaluation systems)
+
+### What it Measures
+`pipeline_accuracy` turns the full optimization outcome into a single **0–100%** score. It is not a hard classification accuracy; it is a curved aggregate built from the project's most suitable metrics in this repo:
+
+- Did the optimized prompt preserve the original meaning?
+- Did fluency, lexical richness, and structural density improve?
+- If images were generated, did semantic alignment and overall image quality improve too?
+
+### Why Curves Instead of Flat Averaging
+Linear averaging makes tiny gains and major gains look too similar. This metric uses **sigmoid / saturation curves** so that:
+
+- strong semantic preservation quickly approaches a high score
+- small positive gains are rewarded, but not over-amplified
+- image improvements help, but do not dominate the text pipeline
+
+### Inputs
+- **STS Score:** semantic preservation
+- **Coherence:** language-model fluency
+- **TTR + Hapax Ratio:** lexical richness
+- **BLEU Overlap:** preservation balance
+- **Complexity:** prompt density
+- **GA Fitness:** evolutionary optimization quality, when available
+- **CLIP + Aesthetic + Composite:** image-side quality, when images are available
+
+### Output
+```json
+{
+  "score_percent": 84.6,
+  "interpretation": "strong",
+  "curve_points": [
+    {"label": "Semantic", "score": 89.2},
+    {"label": "Fluency", "score": 81.4},
+    {"label": "Lexical", "score": 78.9},
+    {"label": "Complexity", "score": 84.1},
+    {"label": "Image", "score": 77.6}
+  ]
+}
+```
+
+### Interpretation
+| Score | Label |
+|---|---|
+| ≥ 85 | excellent |
+| 70–85 | strong |
+| 55–70 | moderate |
+| < 55 | weak |
+
+---
+
+## 11. Summary — Full Metrics Table
 
 | Metric | Module | Online? | Range | Higher = Better |
 |---|---|---|---|---|
@@ -249,3 +302,4 @@ This replaces the v3.x formula which was simply `word_count + brackets × 1.5 + 
 | Complexity | `evaluator.py` | Always | 0–10 | ✅ |
 | GA Fitness | `optimizer_engine.py` | Always | 0+ | ✅ |
 | Composite Score | `evaluator.py` | Partial | 0–10 | ✅ |
+| Pipeline Accuracy | `evaluator.py` | Partial | 0–100% | ✅ |

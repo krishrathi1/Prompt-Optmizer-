@@ -131,6 +131,14 @@
         <p class="ollama-desc">Requires Ollama running on port 11434 (llama3.2 recommended).</p>
       </div>
 
+      <div class="sidebar-block sd-config-card">
+        <div class="sidebar-label">Stable Diffusion API</div>
+        <label class="config-label" for="sdBaseUrl">Base URL</label>
+        <input id="sdBaseUrl" class="config-input" type="text" value="http://127.0.0.1:7860" spellcheck="false" />
+        <button id="saveSdConfigBtn" class="config-btn">Save SD URL</button>
+        <div class="config-status" id="sdConfigStatus">Checking connection…</div>
+      </div>
+
       <!-- Settings (revealed after optimize) -->
       <div class="sidebar-block" id="settingsBlock" style="display:none">
         <div class="sidebar-label">SD Settings</div>
@@ -381,10 +389,26 @@
                 </div>
               </div>
 
+              <div class="metric-card accuracy-card">
+                <div class="metric-label">Pipeline Accuracy</div>
+                <div class="accuracy-score-row">
+                  <div class="accuracy-score" id="pipelineAccuracyVal">—</div>
+                  <div class="accuracy-pill" id="pipelineAccuracyLabel">Awaiting evaluation</div>
+                </div>
+                <svg class="accuracy-curve" viewBox="0 0 240 90" preserveAspectRatio="none" aria-hidden="true">
+                  <path class="accuracy-curve-base" d="M0 72 C48 58, 96 44, 144 34 S192 18, 240 14"></path>
+                  <path class="accuracy-curve-path" id="accuracyCurvePath"></path>
+                  <g id="accuracyCurveDots"></g>
+                </svg>
+                <div class="accuracy-footnote" id="pipelineAccuracyFootnote">
+                  Curved aggregate across STS, coherence, TTR/Hapax, BLEU overlap, complexity, GA fitness, and image quality.
+                </div>
+              </div>
+
               <div class="metric-card composite-card" id="compositeCard">
                 <div class="metric-label">Composite Quality Score</div>
                 <div class="composite-score" id="compositeScore">—</div>
-                <div class="composite-formula">0.4 × CLIP + 0.3 × Aesthetic + 0.3 × Complexity</div>
+                <div class="composite-formula">0.40 × CLIP + 0.25 × Aesthetic + 0.20 × Complexity + 0.10 × Fluency + 0.05 × Efficiency</div>
                 <div class="composite-bar-wrap">
                   <div class="composite-bar" id="compositeBar"></div>
                 </div>
@@ -392,6 +416,25 @@
             </div>
 
             <div id="improvementBanner" class="improvement-banner" style="display:none"></div>
+
+            <div class="eval-chart-section" id="evalChartSection" style="display:none">
+              <div class="section-header eval-chart-header">
+                <h3 class="section-title">Evaluation Metric Visuals</h3>
+                <span class="section-sub">Raw vs enhanced performance across the main score family</span>
+              </div>
+
+              <div class="eval-chart-grid">
+                <div class="eval-chart-panel">
+                  <div class="eval-chart-title">Comparable Metrics</div>
+                  <div class="eval-chart-bars" id="evalMetricBars"></div>
+                </div>
+
+                <div class="eval-chart-panel">
+                  <div class="eval-chart-title">Preservation & Summary</div>
+                  <div class="eval-stat-grid" id="evalMetricStats"></div>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
