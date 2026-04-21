@@ -355,6 +355,43 @@
               </div>
             </div>
           </div>
+
+          <!-- New: High-Fidelity Research Metrics Dashboard -->
+          <div class="research-dashboard" id="researchMetrics" style="margin-top:2.5rem; display:none;">
+            <div class="section-header">
+              <h3 class="section-title">High-Fidelity Research Metrics</h3>
+              <span class="section-sub">Advanced academic indices for comparative NLP analysis</span>
+            </div>
+            <div class="metrics-grid" style="grid-template-columns: repeat(3, 1fr); margin-top:1.5rem;">
+              <div class="metric-card">
+                <div class="metric-label">Readability (Flesch Ease)</div>
+                <div class="research-val-row">
+                  <div class="research-val" id="readabilityRaw">—</div>
+                  <div class="research-arrow">→</div>
+                  <div class="research-val accent" id="readabilityOpt">—</div>
+                </div>
+                <div class="research-note">Lower score = Higher terminological depth</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-label">Syntactic Sophistication</div>
+                <div class="research-val-row">
+                  <div class="research-val" id="sophistRaw">—</div>
+                  <div class="research-arrow">→</div>
+                  <div class="research-val accent" id="sophistOpt">—</div>
+                </div>
+                <div class="research-note">Structural complexity & connector density</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-label">Information Density (LID)</div>
+                <div class="research-val-row">
+                  <div class="research-val" id="densityRaw">—</div>
+                  <div class="research-arrow">→</div>
+                  <div class="research-val accent" id="densityOpt">—</div>
+                </div>
+                <div class="research-note">Content words vs functional particles</div>
+              </div>
+            </div>
+          </div>
         </section>
 
         <!-- ─── SECTION 8: Step 10 — Visual Rendering Engine ─── -->

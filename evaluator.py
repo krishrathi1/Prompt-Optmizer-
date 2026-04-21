@@ -327,6 +327,51 @@ class PromptEvaluator:
     #  Prompt Complexity Score  (Readability)
     # ──────────────────────────────────────────────────────────────────────────
 
+    # ──────────────────────────────────────────────────────────────────────────
+    #  Advanced Linguistic Diagnostics (Readability & Information Density)
+    # ──────────────────────────────────────────────────────────────────────────
+
+    def calculate_readability_metrics(self, text: str) -> Dict:
+        """
+        Calculates academic readability indices (Flesch Kincaid proxy).
+        Standard metric for CSE2702 linguistic complexity analysis.
+        """
+        words = re.findall(r'[a-zA-Z]+', text.lower())
+        if not words:
+            return {"reading_ease": 0.0, "grade_level": 0.0, "sophistication": 0.0}
+
+        # Syllable approximation (vowel clusters)
+        def count_syllables(word):
+            word = word.lower()
+            count = len(re.findall(r'[aeiouy]+', word))
+            if word.endswith('e'): count -= 1
+            if count <= 0: count = 1
+            return count
+
+        num_words = len(words)
+        num_sentences = max(len(re.split(r'[.!?]+', text)), 1)
+        num_syllables = sum(count_syllables(w) for w in words)
+
+        # Flesch Reading Ease Formula (Approx)
+        # 206.835 - 1.015 * (words/sentences) - 84.6 * (syllables/words)
+        reading_ease = 206.835 - 1.015 * (num_words / num_sentences) - 84.6 * (num_syllables / num_words)
+        reading_ease = round(max(min(reading_ease, 100.0), 0.0), 2)
+        
+        # Information Density (Content words / Total words)
+        # We define content words as words > 3 chars (proxy for nouns/adj vs particles)
+        content_words = [w for w in words if len(w) > 3]
+        info_density = round(len(content_words) / num_words, 4)
+
+        return {
+            "reading_ease": reading_ease,
+            "info_density": info_density,
+            "avg_syllables": round(num_syllables / num_words, 2),
+        }
+
+    # ──────────────────────────────────────────────────────────────────────────
+    #  Prompt Complexity Score  (Readability & Structure)
+    # ──────────────────────────────────────────────────────────────────────────
+
     def calculate_complexity_score(self, text: str) -> Dict:
         """
         Prompt complexity and information density.
@@ -336,19 +381,39 @@ class PromptEvaluator:
             {
                 "token_count": int,
                 "unique_tokens": int,
-                "density_score": float [0-10],  # tokens / 5, capped at 10
-                "weighted_token_count": int,     # count of (word:weight) tokens
+                "density_score": float [0-10],  # weighted combination
+                "readability": Dict,
+                "syntactic_depth": float,        # based on punctuation and connectors
             }
         """
         tokens = text.split()
         unique = len(set(t.lower() for t in tokens))
         weighted = len(re.findall(r'\([^)]+:[0-9.]+\)', text))
-        density = round(min(len(tokens) / 5.0, 10.0), 2)
+        
+        # New: Readability
+        readability = self.calculate_readability_metrics(text)
+        
+        # New: Syntactic Depth heuristic (Complexity of structure)
+        # Count dependent markers: because, although, which, who, when, where
+        dep_markers = len(re.findall(r'\b(because|although|which|who|whom|whose|when|where|if|while|as|since)\b', text.lower()))
+        punctuation_complexity = len(re.findall(r'[,;:]', text))
+        syntactic_depth = round(1.0 + (dep_markers * 0.5) + (punctuation_complexity * 0.3), 2)
+
+        # Weighted density score (0-10)
+        # Components: length (40%), unique ratio (30%), readability depth (30%)
+        length_score = min(len(tokens) / 15.0, 1.0) # optimized length target ~15+ words
+        unique_ratio = unique / len(tokens) if tokens else 0
+        readability_depth = 1.0 - (readability["reading_ease"] / 100.0) # lower ease = higher complexity
+        
+        density = round((length_score * 0.4 + unique_ratio * 0.3 + readability_depth * 0.3) * 10, 2)
+
         return {
             "token_count": len(tokens),
             "unique_tokens": unique,
             "density_score": density,
             "weighted_token_count": weighted,
+            "readability": readability,
+            "syntactic_depth": syntactic_depth,
         }
 
     # ──────────────────────────────────────────────────────────────────────────

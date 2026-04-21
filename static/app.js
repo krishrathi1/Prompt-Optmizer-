@@ -742,6 +742,15 @@ document.addEventListener('DOMContentLoaded', () => {
       pipeline_accuracy_label: pipeline?.interpretation || 'unknown',
       accuracy_curve: Array.isArray(pipeline?.curve_points) ? pipeline.curve_points : [],
       roc_auc: evaluation?.roc_auc || {},
+      
+      // Sophisticated Metrics
+      raw_readability:    Number(text?.complexity?.original?.readability?.reading_ease) || 0,
+      opt_readability:    Number(text?.complexity?.optimized?.readability?.reading_ease) || 0,
+      raw_sophistication: Number(text?.complexity?.original?.syntactic_depth) || 0,
+      opt_sophistication: Number(text?.complexity?.optimized?.syntactic_depth) || 0,
+      raw_info_density:   Number(text?.complexity?.original?.readability?.info_density) || 0,
+      opt_info_density:   Number(text?.complexity?.optimized?.readability?.info_density) || 0,
+      
       fitness_score: null,
     };
   }
@@ -844,6 +853,23 @@ document.addEventListener('DOMContentLoaded', () => {
           { label: 'Bigram Ppx', value: (flu.optimized?.bigram_perplexity || 0).toFixed(1) },
         ];
         $('textMetricStats').innerHTML = statCards.map(c => `<div class="eval-stat-card"><div class="eval-stat-label">${c.label}</div><div class="eval-stat-value" style="font-size:1.2rem">${c.value}</div></div>`).join('');
+    }
+
+    // New: Research Metrics Dashboard Population
+    if ($('researchMetrics')) {
+      $('researchMetrics').style.display = 'block';
+      
+      // Readability
+      if ($('readabilityRaw')) $('readabilityRaw').textContent = (m.raw_readability || 0).toFixed(1);
+      if ($('readabilityOpt')) $('readabilityOpt').textContent = (m.opt_readability || 0).toFixed(1);
+      
+      // Sophistication
+      if ($('sophistRaw')) $('sophistRaw').textContent = (m.raw_sophistication || 0).toFixed(1);
+      if ($('sophistOpt')) $('sophistOpt').textContent = (m.opt_sophistication || 0).toFixed(1);
+      
+      // Info Density
+      if ($('densityRaw')) $('densityRaw').textContent = ((m.raw_info_density || 0) * 100).toFixed(0) + '%';
+      if ($('densityOpt')) $('densityOpt').textContent = ((m.opt_info_density || 0) * 100).toFixed(0) + '%';
     }
   }
 

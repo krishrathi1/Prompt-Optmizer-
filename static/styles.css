@@ -738,7 +738,44 @@ body {
 .btn-generate:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 28px var(--accent-glow); }
 .btn-generate:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
-/* ─── IMAGE COMPARISON ─── */
+/* ─── RESEARCH DASHBOARD STYLES ─── */
+.research-dashboard {
+  background: rgba(15,23,42,0.3);
+  padding: 1.5rem;
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(255,255,255,0.06);
+}
+.research-val-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.25rem;
+  margin: 0.5rem 0;
+}
+.research-val {
+  font-size: 1.4rem;
+  font-weight: 800;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text-2);
+}
+.research-val.accent {
+  color: var(--accent);
+}
+.research-arrow {
+  color: var(--text-3);
+  font-size: 1.1rem;
+  font-weight: 900;
+  opacity: 0.5;
+}
+.research-note {
+  font-size: 0.65rem;
+  color: var(--text-3);
+  text-align: center;
+  margin-top: 0.4rem;
+  font-style: italic;
+  max-width: 180px;
+  align-self: center;
+}
 .image-comparison-grid {
   display: grid;
   grid-template-columns: 1fr auto 1fr;

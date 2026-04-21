@@ -61,7 +61,11 @@ def build_metrics_payload(eval_report: dict, fitness_score: float | None = None)
     opt_clip = image_metrics.get("opt_clip", {})
     raw_aesthetic = image_metrics.get("raw_aesthetic", {})
     opt_aesthetic = image_metrics.get("opt_aesthetic", {})
+    
     complexity = text_metrics.get("complexity", {})
+    orig_cplx = complexity.get("original", {})
+    opt_cplx = complexity.get("optimized", {})
+    
     image_available = raw_clip.get("score") is not None or opt_clip.get("score") is not None
 
     return {
@@ -75,10 +79,19 @@ def build_metrics_payload(eval_report: dict, fitness_score: float | None = None)
         "aesthetic": _safe_float(opt_aesthetic.get("score"), 0.0) if image_available else 0.0,
         "raw_aesthetic_available": image_available,
         "opt_aesthetic_available": image_available,
-        "raw_tokens": int(complexity.get("original", {}).get("token_count", 0)),
-        "opt_tokens": int(complexity.get("optimized", {}).get("token_count", 0)),
-        "raw_complexity": _safe_float(complexity.get("original", {}).get("density_score"), 0.0),
-        "opt_complexity": _safe_float(complexity.get("optimized", {}).get("density_score"), 0.0),
+        "raw_tokens": int(orig_cplx.get("token_count", 0)),
+        "opt_tokens": int(opt_cplx.get("token_count", 0)),
+        "raw_complexity": _safe_float(orig_cplx.get("density_score"), 0.0),
+        "opt_complexity": _safe_float(opt_cplx.get("density_score"), 0.0),
+        
+        # New Sophisticated Metrics
+        "raw_readability": _safe_float(orig_cplx.get("readability", {}).get("reading_ease"), 0.0),
+        "opt_readability": _safe_float(opt_cplx.get("readability", {}).get("reading_ease"), 0.0),
+        "raw_sophistication": _safe_float(orig_cplx.get("syntactic_depth"), 0.0),
+        "opt_sophistication": _safe_float(opt_cplx.get("syntactic_depth"), 0.0),
+        "raw_info_density": _safe_float(orig_cplx.get("readability", {}).get("info_density"), 0.0),
+        "opt_info_density": _safe_float(opt_cplx.get("readability", {}).get("info_density"), 0.0),
+
         "raw_composite": _safe_float(composite.get("raw", {}).get("score"), 0.0),
         "composite": _safe_float(composite.get("optimized", {}).get("score"), 0.0),
         "improvement": _safe_float(composite.get("improvement"), 0.0),
