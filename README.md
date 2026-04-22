@@ -1,231 +1,98 @@
-# 🧠 Prompt Optimizer PRO — Elite Edition v4.0
+# ⚡ PROMPT OPTIMIZER PRO (v4.0)
+### *Advanced Neural NLP Analytics & Multi-Objective Diffusion Intelligence Engine*
 
-[![Version](https://img.shields.io/badge/Version-4.0_Elite-6366f1?style=for-the-badge&logo=sparkles)](.)
-[![Course](https://img.shields.io/badge/Course-CSE2702_NLPTA-ec4899?style=for-the-badge&logo=bookopen)](.)
-[![Pipeline](https://img.shields.io/badge/Pipeline-12_Stage_NLP-10b981?style=for-the-badge&logo=flow)](.)
-[![Framework](https://img.shields.io/badge/Framework-FastAPI_%26_Streamlit-f97316?style=for-the-badge)](.)
+![Version](https://img.shields.io/badge/version-4.0-blueviolet?style=for-the-badge)
+![Python](https://img.shields.io/badge/python-3.10+-3776ab?style=for-the-badge)
+![Framework](https://img.shields.io/badge/Framework-NLTK%20|%20FastAPI%20|%20Genetic%20GA-green?style=for-the-badge)
 
-> **Research-grade NLP engine** that transforms basic natural language into mathematically optimised, semantically dense instructions for Stable Diffusion — built to cover every topic of the CSE2702 NLPTA curriculum.
-
----
-
-## 🗺️ System Architecture — 12-Stage Pipeline
-
-```mermaid
-graph TD
-    A([User Input]) --> B[1 · Spelling AI\npyspellchecker + Ollama]
-    B --> C[2 · Tokenization\nNLTK punkt]
-    C --> D[3 · Stemming Analysis\nPorter Stemmer]
-    D --> E[4 · POS Tagging\nPenn Treebank AMPerceptron]
-    E --> F[5 · NER\nMaxEnt Chunker]
-    F --> G[6 · SVO Extraction\nRegexpParser]
-    G --> H[7 · NP + VP Chunking\nRegexpParser]
-    H --> I[8 · TF-IDF Keyword Ranking\n30-doc Domain Corpus]
-    I --> J[9 · Synonym Swapping\nWordNet Path Similarity]
-    J --> K[10 · Genetic Evolution\nPhrase-Aware Crossover\nMulti-Objective Fitness]
-    K --> L[11 · LLM Refinement\nOllama Zero-Shot]
-    L --> M[12 · Vibe + Aspect Mining\nVADER + Opinion Mining]
-    M --> N([Optimized Prompt])
-
-    style A fill:#6366f1,color:#fff
-    style N fill:#10b981,color:#fff
-    style K fill:#a855f7,color:#fff
-    style L fill:#f97316,color:#fff
-```
+**Prompt Optimizer PRO** is an elite, research-grade framework designed to bridge the gap between human linguistics and machine diffusion attention. It implements a sophisticated 12-stage NLP pipeline to transform simple user input into high-fidelity generative prompts, validated by academic benchmarking indices.
 
 ---
 
-## 📚 CSE2702 Course Topic Coverage
+## 🛠️ 12-Stage Neural Pipeline Architecture
 
-| # | Course Topic | Implementation | Coverage |
-|---|---|---|---|
-| T1 | Intro to NLP & Tools (NLTK) | Full NLTK pipeline | ✅ 80% |
-| T2 | Tokenization, Lemmatization, Spell Correction, **N-gram LM** | `word_tokenize`, `WordNetLemmatizer`, `pyspellchecker`, **`ngram_lm.py`** | ✅ 90% |
-| T3 | Morphology, POS Tagging, NER | Penn Treebank tagger, MaxEnt NER chunker | ✅ 90% |
-| T4 | TF-IDF, Distributional Semantics | 30-doc cached TF-IDF, vocabulary richness metrics | ✅ 75% |
-| T5 | Statistical & Neural Modeling | N-gram LM fitness signal in Genetic Algorithm | ✅ 60% |
-| T6 | Information Extraction (SVO) | RegexpParser SVO triplet extraction | ✅ 80% |
-| T7 | Contextual Word Representations | CLIP (ViT-B/32) + SentenceTransformer (`all-MiniLM-L6-v2`) | ✅ 70% |
-| T8 | LLM Prompting Basics | Ollama zero-shot enhancement & spellcheck | ✅ 80% |
-| T9 | RAG & Agents | TF-IDF retrieval (partial proxy) | ⚠️ 25% |
-| T10 | Applications (Sentiment, Opinion Mining) | VADER sentiment, **aspect-based opinion mining** | ✅ 75% |
+The engine orchestrates a sequential transformation of text across twelve specialized linguistic layers:
 
-**Overall academic coverage: 85%+** (up from 53% in v3.x)
-
----
-
-## 🧬 Key Research Features
-
-### 1. N-gram Language Model (`ngram_lm.py`) — *NEW in v4.0*
-A domain-adapted **bigram + trigram LM** trained on 30 high-quality SD prompts with **add-k smoothing**. Used both as an evaluator (perplexity/coherence) and as a **fitness signal** in Genetic Evolution.
-
-```
-PP(W) = 2^(-1/N × Σ log₂ P_smooth(wᵢ | wᵢ₋₁))
-coherence = 1 / (1 + log₂(PP) / 10)     # Normalised 0→1
-```
-
-### 2. Genetic Algorithm (v4.0 — W2/W3 Fixed)
-**Phrase-aware crossover** splits only at NP/VP chunk boundaries — never mid-phrase. **Multi-objective fitness** now combines four signals:
-
-```
-F = 0.35 × TF-IDF keyword emphasis
-  + 0.30 × N-gram LM coherence
-  + 0.20 × weighted token coverage
-  + 0.15 × type-token ratio (vocabulary diversity)
-```
-
-### 3. Aspect-Based Opinion Mining — *NEW in v4.0*
-Extended VADER sentiment analysis to detect **5 semantic aspects** in every prompt:
-
-| Aspect | Example Keywords |
-|---|---|
-| Lighting | golden, bloom, backlit, luminous |
-| Composition | portrait, symmetr, rule, angle |
-| Color | neon, vibrant, muted, pastel |
-| Texture | intricate, metallic, crystalline, crisp |
-| Mood | serene, dramatic, ethereal, mysterious |
-
-### 4. Multi-Metric Evaluation Suite (v3.0)
-11 metrics across 3 axes — **text**, **image**, **composite**:
-
-| Metric | Formula Summary |
-|---|---|
-| CLIP Score | `cos(img_embed, text_embed)` — Vision↔Language alignment |
-| STS Score  | `cos(embed(orig), embed(opt))` — Meaning preservation |
-| Fluency (Bigram PP) | `2^(-avg_log_prob)` — N-gram language model |
-| Aesthetic | Sharpness + Contrast + Colorfulness (Hasler & Süsstrunk) |
-| Vocabulary Richness | TTR + Hapax Legomena Ratio |
-| BLEU Overlap | N-gram precision of optimized vs original |
-| Composite | `0.40×CLIP + 0.25×Aes + 0.20×Cplx + 0.10×Flu + 0.05×Eff` |
-
-> See [`docs/EVALUATION_METRICS.md`](docs/EVALUATION_METRICS.md) for full formulas, scales, and interpretations.
-
-### 5. Context-Aware Negative Shielding (NER-Guided)
-NER entity detection now **guides negative prompts** — if a PERSON entity is detected, entity-specific negatives (`wrong person, misidentified subject`) are auto-injected.
+1.  **Orthographic Correction**: Leverages Levenshtein distance-based spelling correction to eliminate noise at the source.
+2.  **Multilingual Tokenization**: Granular decomposition of strings into semantic atoms using NLTK’s Punkt tokenizer.
+3.  **Morphological Stemming**: Porter Stemming reduction of words to their root forms to normalize semantic density.
+4.  **Penn-Treebank POS Tagging**: Deep grammatical classification (Nouns, Verbs, Modifiers) to identify the prompt's structural skeleton.
+5.  **Named Entity Recognition (NER) & Concept Extraction**: Identification of specific entities (GPE, PERSON) with a "Concept Fallback" for common noun identification.
+6.  **SVO Pathway Extraction**: Isolates Subject-Verb-Object relationships to prioritize the primary "Action" in the diffusion frame.
+7.  **NP/VP Phrase Chunking**: Recursive grouping of tokens into Noun Phrases and Verb Phrases to maintain grammatical integrity during modification.
+8.  **Domain-Aware TF-IDF Ranking**: Uses Statistical Frequency Analysis against a specialized Gen-AI corpus to determine the most important keywords.
+9.  **Linguistic Laddering (Synonym Swaps)**: Uses WordNet Path Similarity to swap generic vocabulary with "Elite" terminological equivalents.
+10. **Genetic Evolution (GA)**: A stochastic multi-generation evolutionary algorithm that creates "phenotypes" of the prompt and selects the survivor based on a multi-objective fitness function.
+11. **LLM Refinement (Local Brain)**: Zero-shot integration with Ollama (Llama 3.2) for high-level creative nuance expansion.
+12. **Aspect-Based Vibe HUD**: VADER sentiment analysis combined with lighting and color-theory heuristics to predict the output's mood.
 
 ---
 
-## 📂 Project Structure
+## 🧬 Evolutionary Optimization Logic
 
-```
-Prompt-Optimizer/
-├── optimizer_engine.py      ← 12-Stage NLP Brain (v4.0 — 700+ lines)
-├── evaluator.py             ← 11-Metric Evaluation Suite (v3.0)
-├── ngram_lm.py              ← N-gram LM: Bigram + Trigram + Perplexity (NEW)
-├── server.py                ← FastAPI Backend + API endpoints (v4.0)
-├── app.py                   ← Streamlit Research Dashboard
-├── sd_interface.py          ← Stable Diffusion API client (DPM++ 2M Karras)
-├── requirements.txt         ← All dependencies (complete)
-├── nltk_data/               ← Bundled NLTK resources (offline)
-└── docs/
-    ├── NLP_COURSE_ALIGNMENT.md   ← CSE2702 curriculum ↔ code mapping
-    ├── WEAKNESS_ANALYSIS.md      ← 17-weakness audit with fixes
-    ├── EVALUATION_METRICS.md     ← All 11 metrics with formulas
-    └── IMPROVEMENTS.md           ← v3.x → v4.0 full changelog
-```
+The core "brain" of the project is the **Stochastic Genetic Optimizer**:
+-   **Population Dynamics**: Maintains a population of mutated prompt variants.
+-   **Phrase-Aware Crossover**: Merges "parent" prompts only at grammatical chunk boundaries to prevent "hallucinated" syntax.
+-   **Multi-Objective Fitness Function (Academic Formula)**:
+    $Fitness = (K_b \cdot 0.35) + (C_h \cdot 0.25) + (W_i \cdot 0.25) + (D_v \cdot 0.15)$
+    - $K_b$: Keyword TF-IDF Bonus
+    - $C_h$: Semantic Coherence (N-gram)
+    - $W_i$: Weight Intensity Distribution
+    - $D_v$: Type-Token Diversity Ratio
 
 ---
 
-## 🛠️ Technical Stack
+## 📊 Academic Benchmarking & Lifecycle Metrics
 
-| Layer | Technology |
-|---|---|
-| **Linguistic Core** | NLTK 3.8+ (WordNet 3.1, VADER, Penn Treebank, MaxEnt NER) |
-| **Statistical Models** | Custom N-gram LM (add-k smoothed bigram + trigram) |
-| **Vectorization** | scikit-learn TF-IDF (30-doc cached vectorizer) |
-| **Neural Evaluator** | PyTorch + HuggingFace Transformers (CLIP ViT-B/32) |
-| **Semantic Similarity** | SentenceTransformers (`all-MiniLM-L6-v2`) |
-| **LLM Integration** | Ollama (local LLaMA 3.2, zero-shot prompting) |
-| **Generative Backend** | Stable Diffusion WebUI API (A1111, DPM++ 2M Karras) |
-| **API Framework** | FastAPI + Uvicorn |
-| **Dashboard** | Streamlit |
+We provide a rigorous verification layer to close the loop between NLP theory and image reality:
+
+*   **Semantic Fidelity (STS)**: Measures meaning preservation using Siamese BERT networks (all-MiniLM-L6-v2).
+*   **Ensemble ROC-AUC**: A statistical confidence score (0.0 to 1.0) derived from the consensus of all diagnostic metrics.
+*   **CLIP Score Alignment**: Cosine similarity between the text embedding and the generated image embedding (Vision-Language Alignment).
+*   **Syntactic Sophistication**: Heuristic measurement of dependency markers and punctuation complexity.
+*   **Information Density (LID)**: Ratio of content words to functional particles to measure creative "meat" per token.
 
 ---
 
-## 🚀 Getting Started
+## 💻 Tech Stack
 
-### Prerequisites
-- Python 3.10+
-- Stable Diffusion WebUI running with `--api` flag *(for image generation only)*
-- Ollama installed locally *(optional — for LLM refinement)*
-
-### Installation
-```powershell
-cd Prompt-Optmizer-
-pip install -r requirements.txt
-```
-
-### Run the Pro UI (FastAPI)
-```powershell
-python server.py
-# → http://127.0.0.1:8000
-```
-
-### Run the Research Dashboard (Streamlit)
-```powershell
-streamlit run app.py
-```
-
-### Test the NLP Engine alone (no SD needed)
-```powershell
-python optimizer_engine.py
-python ngram_lm.py
-python evaluator.py
-```
+-   **Backend**: Python 3.11, FastAPI (Asynchronous lifecycle)
+-   **Linguistics**: NLTK, WordNet, VADER, Scikit-Learn (TF-IDF)
+-   **Evolution**: Custom Stochastic GA Engine
+-   **Vision**: Stable Diffusion WebUI API Integration
+-   **Frontend**: Vanilla JS (ES6+), Modern CSS (Glassmorphism), Real-time Sparklines (SVG)
 
 ---
 
-## 📡 API Endpoints
+## 🚀 Installation & Research Setup
 
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/api/health` | System health & model status |
-| `POST` | `/api/optimize` | Run 12-stage NLP pipeline |
-| `POST` | `/api/generate` | Optimize + generate images + full evaluation |
-| `POST` | `/api/evaluate_text` | Text-only evaluation (no SD) — **NEW** |
-
-### `/api/optimize` — Request Body
-```json
-{
-  "prompt": "a girl eating food",
-  "style": "Photoreal",
-  "use_ollama": false
-}
-```
-
-### `/api/evaluate_text` — Response (excerpt)
-```json
-{
-  "evaluation": {
-    "text_metrics": {
-      "sts_score": { "score": 0.72, "interpretation": "good" },
-      "fluency": {
-        "original": { "coherence": 0.45, "bigram_perplexity": 68.2 },
-        "optimized": { "coherence": 0.71, "bigram_perplexity": 22.8 }
-      },
-      "vocabulary_richness": {
-        "optimized": { "ttr": 0.81, "hapax_ratio": 0.73 }
-      }
-    },
-    "composite": {
-      "improvement": 2.4
-    }
-  }
-}
-```
+1.  **Clone the Repository**:
+    ```bash
+    git clone https://github.com/krishrathi1/Prompt-Optmizer-.git
+    ```
+2.  **Environment Sync**:
+    ```bash
+    pip install -r requirements.txt
+    ```
+3.  **NLP Dataset Initialization**:
+    ```python
+    import nltk
+    nltk.download(['punkt', 'averaged_perceptron_tagger', 'wordnet', 'vader_lexicon', 'maxent_ne_chunker', 'words'])
+    ```
+4.  **Ignite the Engine**:
+    ```bash
+    python server.py
+    ```
 
 ---
 
-## 📖 Documentation Index
+## 🎓 Academic Alignment
 
-| Document | Contents |
-|---|---|
-| [`NLP_COURSE_ALIGNMENT.md`](docs/NLP_COURSE_ALIGNMENT.md) | Every CSE2702 topic ↔ code feature, coverage %, gaps |
-| [`WEAKNESS_ANALYSIS.md`](docs/WEAKNESS_ANALYSIS.md) | 17 weaknesses audited (W1–W17), root cause + fix |
-| [`EVALUATION_METRICS.md`](docs/EVALUATION_METRICS.md) | 11 metrics — formulas, scales, course mapping |
-| [`IMPROVEMENTS.md`](docs/IMPROVEMENTS.md) | v3.x → v4.0 full changelog per file |
+This project is a primary submission for **CSE2702 (NLP Coursework)**, demonstrating the practical application of:
+-   **CO#1**: Information Extraction & Statistical Modeling.
+-   **CO#2**: Evolutionary Computing in Linguistic Optimization.
+-   **CO#3**: Multi-modal Semantic Alignment (Vision-Language).
 
 ---
 
-> [!NOTE]
-> This project is part of the **CSE2702 NLPTA** experiential learning component. It implements novel improvements to NLP-driven prompt engineering including a domain-adapted N-gram LM fitness signal, phrase-aware genetic crossover, aspect-based opinion mining, and a multi-metric evaluation framework — fulfilling CO1, CO2, and CO3 requirements.
+> *Created with ❤️ by Krish Rathi — Powered by Neural NLP Dynamics.*

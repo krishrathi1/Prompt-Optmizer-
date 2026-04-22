@@ -158,6 +158,22 @@ TFIDF_DOMAIN_CORPUS = [
     "a student reading a book in a quiet university library",
     "nature photography of a bird perched on a tropical tree branch",
     "a family having a picnic with snacks and drinks on the grass",
+    "a sprawling futuristic megacity with neon spires and low-hanging smog",
+    "classic black and white noir photography of a detective in a rain-slicked alley",
+    "high-fantasy dragon riders soaring through a canyon of floating crystals",
+    "macro shot of a circuit board with glowing data conduits and nano-chips",
+    "vibrant street art mural on a brick wall in a sun-drenched urban plaza",
+    "a mystical forest glade where the trees are made of pure silver and light",
+    "post-apocalyptic wasteland with rusted skyscrapers and overgrown vegetation",
+    "serene mountainside temple with cherry blossoms falling in slow motion",
+    "galactic nebula with shifting colors and distant stars in hyper-resolution",
+    "victorian study with leather-bound books and a brass telescope by the window",
+    "minimalist architectural design of a museum with sharp angles and clean lines",
+    "a group of nomads traveling across a vast glowing desert under two moons",
+    "extreme close-up of a human eye reflecting a digital data stream",
+    "baroque cathedral interior with immense stained glass and golden altars",
+    "concept art of a mechanical heart powered by a miniature contained star",
+    "a hyper-detailed schematic of a futuristic engine with glowing flux cores",
 ]
 
 
