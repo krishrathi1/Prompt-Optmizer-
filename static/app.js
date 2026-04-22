@@ -389,11 +389,35 @@ document.addEventListener('DOMContentLoaded', () => {
         ).join('')}</div>`;
 
       case 10: // Genetic Evolution
+        const winner = d?.winner || {};
+        const rejected = Array.isArray(d?.rejected) ? d.rejected : [];
+        const lm = d?.lm_scores || {};
+        
         return `
           <div class="ga-status">
-            <div class="ga-metric"><strong>Final Fitness:</strong> ${d?.fitness?.toFixed(4) || 'â€”'}</div>
-            <div class="ga-metric"><strong>Coherence:</strong> ${d?.lm_scores?.coherence?.toFixed(4) || 'â€”'}</div>
-            <p style="font-size:0.75rem;color:var(--text-3);margin-top:0.4rem">Evolutionary algorithm optimized for semantic density and bigram perplexity.</p>
+            <div class="ga-metric-group">
+                <div class="ga-metric"><strong>Final Fitness:</strong> <span style="color:#a855f7">${winner.fitness?.toFixed(4) || '—'}</span></div>
+                <div class="ga-metric"><strong>Coherence:</strong> ${lm.coherence?.toFixed(4) || '—'}</div>
+            </div>
+            
+            <div style="margin-top:1rem;">
+                <div style="font-size:0.65rem; color:var(--text-3); text-transform:uppercase; letter-spacing:0.05rem; margin-bottom:0.5rem; font-weight:800;">Phenotype Selection (Winners & Rejected)</div>
+                <div class="ga-candidate winner">
+                    <div class="ga-cand-rank">Selected</div>
+                    <div class="ga-cand-text">${escHtml(winner.text || '')}</div>
+                    <div class="ga-cand-score">${winner.fitness?.toFixed(3)}</div>
+                </div>
+                ${rejected.map((r, i) => `
+                    <div class="ga-candidate rejected">
+                        <div class="ga-cand-rank">#${i+2} Rejected</div>
+                        <div class="ga-cand-text">${escHtml(r.text)}</div>
+                        <div class="ga-cand-score">${r.fitness.toFixed(3)}</div>
+                    </div>
+                `).join('')}
+            </div>
+            <p style="font-size:0.7rem;color:var(--text-3);margin-top:0.8rem; line-height:1.4">
+                The evolutionary engine simulated multiple mutations. Rejected candidates failed due to lower semantic density or poor n-gram coherence.
+            </p>
           </div>`;
 
       case 11: // LLM Refinement

@@ -150,6 +150,14 @@ TFIDF_DOMAIN_CORPUS = [
     "a lone astronaut gazing at earth from the surface of the moon",
     "professional food photography of a gourmet burger with moody studio lighting",
     "retro sci-fi space station interior with retractable panels and glowing consoles",
+    "a young boy eating a delicious fruit in a sunny garden park",
+    "a group of children playing with a dog in a green meadow",
+    "the chef is preparing a fresh meal in a modern kitchen",
+    "a person walking through a busy city street at noon",
+    "someone enjoying a tasty banana snack on a wooden bench",
+    "a student reading a book in a quiet university library",
+    "nature photography of a bird perched on a tropical tree branch",
+    "a family having a picnic with snacks and drinks on the grass",
 ]
 
 
@@ -906,8 +914,16 @@ class PromptOptimizer:
                 new_pop.append(child)
             population = new_pop
 
-        best = max(population, key=lambda p: self._calculate_fitness(p, base_tokens, keyword_scores))
-        return " ".join(best), float(self._calculate_fitness(best, base_tokens, keyword_scores))
+        final_scored = [
+            {"text": " ".join(p), "fitness": float(self._calculate_fitness(p, base_tokens, keyword_scores))}
+            for p in population
+        ]
+        final_scored.sort(key=lambda x: x["fitness"], reverse=True)
+        
+        best = final_scored[0]
+        rejected = final_scored[1:5] # Capture top 4 rejected ones
+        
+        return best["text"], best["fitness"], rejected
 
     # ── W11: Change Summary Diff ──────────────────────────────────────────────
 
@@ -1017,7 +1033,7 @@ class PromptOptimizer:
                 if pos.startswith(('J', 'V')) and not is_stopword
                 else []
             )
-            replacement = (synonyms[0] if synonyms and pos.startswith('J') else word)
+            replacement = (synonyms[0] if synonyms and pos.startswith(('J', 'V')) else word)
             spec_data = self.get_specificity_data(word) if is_subject else None
 
             linguistics.append({
@@ -1036,7 +1052,7 @@ class PromptOptimizer:
             base_mutation_tokens.append(replacement)
 
         # ── Stage 10: Genetic Evolution ───────────────────────────────────────
-        evolved_text, fitness_score = self.evolve_prompt(
+        evolved_text, fitness_score, rejected_candidates = self.evolve_prompt(
             base_mutation_tokens, keyword_scores, tagged
         )
 
@@ -1097,7 +1113,11 @@ class PromptOptimizer:
              "data": [l for l in linguistics if l['changed']], "active": True},
             {"step": 10, "name": "Genetic Evolution",  "icon": "G", "color": "#a855f7",
              "detail": f"Fitness: {fitness_score:.3f} | Coherence: {lm_scores.get('coherence', 0):.3f}",
-             "data": {"fitness": fitness_score, "lm_scores": lm_scores}, "active": True},
+             "data": {
+                 "winner": {"text": evolved_text, "fitness": fitness_score},
+                 "rejected": rejected_candidates,
+                 "lm_scores": lm_scores
+             }, "active": True},
             {"step": 11, "name": "LLM Refinement",     "icon": "B", "color": "#f97316",
              "detail": "Ollama zero-shot active" if use_ollama else "Bypassed (enable Ollama)",
              "data": ollama_data, "active": use_ollama},

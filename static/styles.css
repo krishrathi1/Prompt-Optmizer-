@@ -1361,3 +1361,67 @@ input:checked + .slider:before { transform: translateX(16px); background-color: 
   color: #f472b6; 
   font-family: "JetBrains Mono", monospace;
 }
+/* ─── GENETIC EVOLUTION LIST STYLES ─── */
+.ga-status { display: flex; flex-direction: column; gap: 0.8rem; }
+.ga-metric-group { display: flex; gap: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 0.8rem; margin-bottom: 0.4rem; }
+.ga-metric { font-size: 0.8rem; font-family: 'JetBrains Mono', monospace; }
+
+.ga-candidate {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-md);
+    margin-bottom: 0.6rem;
+    border: 1px solid var(--border);
+    background: rgba(0,0,0,0.2);
+    transition: all 0.2s ease;
+}
+.ga-candidate.winner {
+    background: rgba(16, 185, 129, 0.08);
+    border-color: var(--border-accent);
+}
+.ga-candidate.rejected {
+    opacity: 0.75;
+}
+.ga-cand-rank {
+    font-size: 0.6rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: var(--text-3);
+    width: 70px;
+    flex-shrink: 0;
+}
+.ga-candidate.winner .ga-cand-rank { color: var(--accent); }
+.ga-cand-text {
+    flex: 1;
+    font-size: 0.72rem;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text-2);
+    line-height: 1.5;
+    word-break: break-all;
+}
+.ga-candidate.winner .ga-cand-text { color: var(--text-1); }
+.ga-cand-score {
+    font-size: 0.75rem;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--accent);
+    font-weight: 700;
+    width: 50px;
+    text-align: right;
+    flex-shrink: 0;
+}
+.ga-candidate.rejected .ga-cand-score { color: var(--text-3); }
+
+/* Staggered animation for list items */
+.ga-candidate { animation: slideInX 0.4s ease both; }
+@keyframes slideInX {
+    from { transform: translateX(15px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+[data-idx="0"] { animation-delay: 0.1s; }
+[data-idx="1"] { animation-delay: 0.2s; }
+[data-idx="2"] { animation-delay: 0.3s; }
+[data-idx="3"] { animation-delay: 0.4s; }
+[data-idx="4"] { animation-delay: 0.5s; }
