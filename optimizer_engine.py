@@ -577,6 +577,14 @@ class PromptOptimizer:
                 etype = subtree.label()
                 if etype in entities:
                     entities[etype].append(entity_name)
+        
+        # CONCEPT Extraction (W16 Fix: Fallback for common nouns like 'boy', 'banana')
+        if sum(len(v) for v in entities.values()) == 0:
+            for word, pos in tagged:
+                if pos.startswith('NN') and word.lower() not in self._stopwords:
+                    # Treat significant nouns as concepts if no NER found
+                    if "CONCEPT" not in entities: entities["CONCEPT"] = []
+                    entities["CONCEPT"].append(word)
 
         return entities
 
@@ -867,20 +875,25 @@ class PromptOptimizer:
             lm_data = self._score_fluency(clean_text)
             lm_coherence = lm_data.get("coherence", 0.5) * 10
 
-        # Weight coverage (how well-weighted are key tokens)
-        weight_cov = min((weight_count / max(word_count, 1)) * 30, 10.0)
+        # Weight intensity (W2 update: Sum of actual weight values, not just count)
+        all_weights = [float(f) for f in re.findall(r':(1\.[0-9])', text)]
+        weight_intensity = sum(all_weights) / max(word_count, 1)
+        weight_cov = min(weight_intensity * 8.0, 10.0)
 
         # Type-token ratio (vocabulary diversity)
         unique_words = len(set(w.lower() for w in words))
         ttr = min((unique_words / max(word_count, 1)) * 10, 10.0)
 
+        # Multi-objective fitness (Balanced for Stable Diffusion)
         fitness = (
             keyword_bonus * 0.35 +
-            lm_coherence  * 0.30 +
-            weight_cov    * 0.20 +
+            lm_coherence  * 0.25 +
+            weight_cov    * 0.25 +
             ttr           * 0.15
         )
-        return round(fitness, 4)
+        # Adding a tiny gaussian noise (epsilon) for genuine diversity in similar phenotypes
+        noise = random.uniform(0.0001, 0.0009)
+        return round(fitness + noise, 4)
 
     def evolve_prompt(self, base_tokens: List[str], keyword_scores: Dict,
                       tagged: List[Tuple], generations: int = 4,
@@ -921,7 +934,7 @@ class PromptOptimizer:
         final_scored.sort(key=lambda x: x["fitness"], reverse=True)
         
         best = final_scored[0]
-        rejected = final_scored[1:5] # Capture top 4 rejected ones
+        rejected = final_scored[1:] # Fetch ALL genuine rejected candidates
         
         return best["text"], best["fitness"], rejected
 

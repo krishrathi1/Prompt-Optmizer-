@@ -461,16 +461,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
       let inner = escHtml(tok.word);
       if (tok.is_subject) {
-        inner += `<span class="weight-badge">Ã—1.25</span>`;
-        chip.title = 'Subject noun â€” weight boosted';
+        inner += `<span class="weight-badge">×1.25</span>`;
+        chip.title = 'Subject noun — weight boosted';
       }
       if (tok.changed) {
         const badge = document.createElement('div');
         badge.className = 'chip-badge';
-        badge.textContent = 'âœ¦';
+        badge.textContent = '✦';
         chip.appendChild(badge);
       }
-      chip.innerHTML = inner + (tok.is_subject ? `<span class="weight-badge">Ã—1.25</span>` : '');
+      chip.innerHTML = inner + (tok.is_subject ? `<span class="weight-badge">×1.25</span>` : '');
 
       // Tooltip
       chip.addEventListener('mouseenter', e => showTokenTooltip(e, tok));
