@@ -1,9 +1,9 @@
 """
 optimizer_engine.py  —  Prompt Optimizer PRO  (v4.0 — Elite Edition)
 =====================================================================
-CSE2702 NLP Pipeline  |  12-Stage Academic-Grade Optimization Engine
+CSE2702 Gen AI Pipeline  |  12-Stage Academic-Grade Optimization Engine
 
-NLP Topics Covered (CSE2702 Curriculum):
+Gen AI Topics Covered (CSE2702 Curriculum):
   T1  — NLTK Tools integration
   T2  — Tokenization, Lemmatization, Spell Correction, N-gram LM (NEW)
   T3  — POS Tagging (Penn Treebank), NER (MaxEnt Chunker)
@@ -242,7 +242,7 @@ ASPECT_DIMENSIONS = {
 
 class PromptOptimizer:
     """
-    12-Stage NLP Optimization Engine for Stable Diffusion prompts.
+    12-Stage Gen AI Optimization Engine for Stable Diffusion prompts.
     Implements techniques from all 10 CSE2702 course topics.
     """
 
@@ -518,7 +518,7 @@ class PromptOptimizer:
         except Exception:
             return self.correct_spelling(prompt)
 
-    # ── T3/T4: Core NLP Helpers ───────────────────────────────────────────────
+    # ── T3/T4: Core Gen AI Helpers ───────────────────────────────────────────────
 
     def get_synonyms(self, word: str, pos: str) -> List[str]:
         """
@@ -1023,7 +1023,7 @@ class PromptOptimizer:
     def optimize(self, prompt: str, style_preset: str = "Photoreal",
                  use_ollama: bool = False) -> Dict:
         """
-        12-Stage NLP Optimization Pipeline (v4.0 — Elite Edition).
+        12-Stage Gen AI Optimization Pipeline (v4.0 — Elite Edition).
 
         Stage  1: Spelling AI (pyspellchecker / Ollama)
         Stage  2: Tokenization (NLTK punkt)

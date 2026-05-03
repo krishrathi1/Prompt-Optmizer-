@@ -1,5 +1,5 @@
-# 🎓 PROMPT OPTIMIZER PRO — CSE2702 NLP Project Presentation
-### *Advanced Neural NLP Analytics & Multi-Objective Diffusion Intelligence Engine*
+# 🎓 PROMPT OPTIMIZER PRO — CSE2702 Gen AI Project Presentation
+### *Advanced Neural Gen AI Analytics & Multi-Objective Diffusion Intelligence Engine*
 ### **Author: Krish Rathi**
 
 ---
@@ -9,12 +9,12 @@
 1. [Problem Statement](#-problem-statement)
 2. [Proposed Solution](#-proposed-solution)
 3. [System Architecture](#-system-architecture)
-4. [12-Stage NLP Pipeline — Deep Dive](#-12-stage-nlp-pipeline--deep-dive)
+4. [12-Stage Gen AI Pipeline — Deep Dive](#-12-stage-gen-ai-pipeline--deep-dive)
 5. [Genetic Evolution Algorithm](#-genetic-evolution-algorithm)
 6. [Evaluation & Benchmarking Framework](#-evaluation--benchmarking-framework)
 7. [Technology Stack](#-technology-stack)
 8. [Live Demonstration Walkthrough](#-live-demonstration-walkthrough)
-9. [Course Objective Mapping](#-course-objective-mapping)
+9. [Course Objective Mapping (Gen AI)](#-course-objective-mapping)
 10. [Results & Key Findings](#-results--key-findings)
 11. [Future Scope](#-future-scope)
 12. [References](#-references)
@@ -35,13 +35,13 @@ When users write prompts for text-to-image models (Stable Diffusion, DALL-E, Mid
 | Missing stylistic cues | Output lacks professional photographic quality |
 | No feedback on quality | Users cannot gauge if their prompt is "good" without generating |
 
-**Core Research Question**: *Can NLP techniques systematically transform a naive user prompt into an optimized, high-fidelity input for diffusion models, while preserving the user's original semantic intent?*
+**Core Research Question**: *Can Gen AI techniques systematically transform a naive user prompt into an optimized, high-fidelity input for diffusion models, while preserving the user's original semantic intent?*
 
 ---
 
 ## 💡 Proposed Solution
 
-**Prompt Optimizer PRO** — a research-grade, 12-stage NLP pipeline that:
+**Prompt Optimizer PRO** — a research-grade, 12-stage Gen AI pipeline that:
 
 1. **Analyzes** the input at every linguistic level (morphology → syntax → semantics)
 2. **Transforms** weak vocabulary into domain-specific "elite" terminology
@@ -88,9 +88,9 @@ When users write prompts for text-to-image models (Stable Diffusion, DALL-E, Mid
 
 ---
 
-## 🔬 12-Stage NLP Pipeline — Deep Dive
+## 🔬 12-Stage Gen AI Pipeline — Deep Dive
 
-This is the heart of the project. Each stage performs a specific NLP operation and passes its output to the next stage.
+This is the heart of the project. Each stage performs a specific Gen AI operation and passes its output to the next stage.
 
 ---
 
@@ -588,11 +588,11 @@ Optimized: a (boy:1.3) consuming (banana:1.4) in indigenous (street:1.2),
 
 | CO# | Course Objective | How This Project Addresses It |
 |-----|-----------------|-------------------------------|
-| **CO1** | Understand and apply NLP preprocessing techniques | Stages 1-4: Spelling correction, tokenization, stemming, POS tagging |
+| **CO1** | Understand and apply Gen AI preprocessing techniques | Stages 1-4: Spelling correction, tokenization, stemming, POS tagging |
 | **CO2** | Implement information extraction and text analysis | Stages 5-8: NER, SVO extraction, NP chunking, TF-IDF ranking |
-| **CO3** | Apply machine learning techniques to NLP problems | Stage 10: Genetic Algorithm with multi-objective fitness function |
-| **CO4** | Evaluate NLP systems using standard metrics | Evaluator: STS, CLIP, TTR, ROC-AUC, Composite scoring |
-| **CO5** | Build end-to-end NLP applications | Full-stack: FastAPI backend + Interactive JS frontend with live pipeline visualization |
+| **CO3** | Apply machine learning techniques to Gen AI problems | Stage 10: Genetic Algorithm with multi-objective fitness function |
+| **CO4** | Evaluate Gen AI systems using standard metrics | Evaluator: STS, CLIP, TTR, ROC-AUC, Composite scoring |
+| **CO5** | Build end-to-end Gen AI applications | Full-stack: FastAPI backend + Interactive JS frontend with live pipeline visualization |
 
 ---
 

@@ -216,7 +216,7 @@ document.addEventListener('DOMContentLoaded', () => {
       setTimeout(() => el.pipelineFlow.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
 
     } catch (err) {
-      showError(`NLP Engine Error: ${err.message}`);
+      showError(`Gen AI Engine Error: ${err.message}`);
     } finally {
       setBtn(el.optimizeBtn, false, 'Optimize');
     }
@@ -433,12 +433,21 @@ document.addEventListener('DOMContentLoaded', () => {
             </p>
           </div>`;
 
-      case 11: // LLM Refinement
-        if (!d) return '<p class="empty-state">Local LLM generation was bypassed or failed.</p>';
+      case 11: // Gen AI Refinement
+        const text = typeof d === 'string' ? d : (d?.text || '');
+        const model = d?.model || 'Unknown';
+        const isFt = d?.is_finetuned;
+        if (!text) return '<p class="empty-state">Local Gen AI generation was bypassed or failed.</p>';
         return `
           <div class="ollama-result-box">
-             <div style="font-size:0.65rem; color:#a855f7; font-weight:800; margin-bottom:0.5rem; text-transform:uppercase;">Enhanced Prompt Outline</div>
-             <div style="font-family:'JetBrains Mono', monospace; font-size:0.8rem; line-height:1.6; color:var(--text-1)">${escHtml(d)}</div>
+             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.8rem">
+                <div style="font-size:0.65rem; color:#f97316; font-weight:800; text-transform:uppercase;">Enhanced Prompt Outline</div>
+                ${isFt ? `<span class="ft-badge" style="margin:0; padding: 0.15rem 0.4rem; font-size:0.5rem">FINE-TUNED MODEL</span>` : ''}
+             </div>
+             <div style="font-family:'JetBrains Mono', monospace; font-size:0.85rem; line-height:1.7; color:var(--text-1); background:rgba(0,0,0,0.2); padding:1rem; border-radius:8px; border:1px solid rgba(249,115,22,0.1)">
+                ${escHtml(text)}
+             </div>
+             <div style="margin-top:0.6rem; font-size:0.65rem; color:var(--text-3); text-align:right">Model: <strong>${escHtml(model)}</strong></div>
           </div>`;
 
       case 12: // Vibe Analysis
@@ -688,7 +697,7 @@ document.addEventListener('DOMContentLoaded', () => {
         label.textContent = genAi.is_finetuned ? 'Gen AI (Fine-tuned)' : 'Gen AI Optimized';
         label.classList.add('enhanced-label');
       } else {
-        label.textContent = 'NLP-Enhanced';
+        label.textContent = 'Gen AI-Enhanced';
         label.classList.remove('enhanced-label');
       }
     }
