@@ -200,6 +200,22 @@ async def update_config(req: ConfigRequest):
     }
 
 
+@app.get("/api/report")
+async def get_report():
+    """Serves the project evaluation report content."""
+    # Try the new detailed evaluation report first
+    report_path = os.path.join(BASE_DIR, "PROJECT_EVALUATION.md")
+    if not os.path.exists(report_path):
+        report_path = os.path.join(BASE_DIR, "Prompt_Optimizer_Report.md")
+    
+    if not os.path.exists(report_path):
+        return {"content": "# Report Not Found\nPlease ensure PROJECT_EVALUATION.md exists."}
+        
+    with open(report_path, "r", encoding="utf-8") as f:
+        content = f.read()
+    return {"content": content}
+
+
 @app.post("/api/optimize")
 async def optimize_prompt(req: PromptRequest):
     try:

@@ -69,7 +69,44 @@ document.addEventListener('DOMContentLoaded', () => {
     aucInterpMini:  $('aucInterpMini'),
     // Tooltip
     tokenTooltip:   $('tokenTooltip'),
+    // Modal
+    viewEvaluationBtn: $('viewEvaluationBtn'),
+    reportModal:    $('reportModal'),
+    closeReportBtn: $('closeReportBtn'),
+    reportContent:  $('reportContent'),
   };
+
+  /* â”€â”€â”€ Modal Logic â”€â”€â”€ */
+  el.viewEvaluationBtn.addEventListener('click', async (e) => {
+    e.preventDefault();
+    el.reportModal.style.display = 'flex';
+    el.reportContent.innerHTML = '<div class="skeleton-loader"></div>';
+    
+    try {
+      const r = await fetch('/api/report');
+      const d = await r.json();
+      // Simple markdown-ish parser for demo
+      el.reportContent.innerHTML = parseMarkdown(d.content);
+    } catch {
+      el.reportContent.innerHTML = '<p style="color:var(--red)">Failed to load report.</p>';
+    }
+  });
+
+  el.closeReportBtn.addEventListener('click', () => el.reportModal.style.display = 'none');
+  window.addEventListener('click', (e) => { if (e.target === el.reportModal) el.reportModal.style.display = 'none'; });
+
+  function parseMarkdown(md) {
+    if (!md) return '';
+    return md
+      .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+      .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+      .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+      .replace(/^\- (.*$)/gim, '<li>$1</li>')
+      .replace(/---/g, '<hr>')
+      .replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>')
+      .replace(/\*(.*)\*/gim, '<em>$1</em>')
+      .split('\n').map(line => line.trim().startsWith('<') ? line : `<p>${line}</p>`).join('');
+  }
 
   /* â”€â”€â”€ State â”€â”€â”€ */
   let session = { original: '', optimized: '', negative: '', settings: {}, pipelineStages: [], fitnessScore: null };

@@ -105,6 +105,24 @@ body {
 .status-dot.ok { background: var(--accent); box-shadow: 0 0 10px var(--accent); }
 .status-dot.error { background: var(--red); box-shadow: 0 0 10px var(--red); }
 
+/* ─── HEADER NAV ─── */
+.header-nav { display: flex; gap: 1.5rem; margin-left: 2rem; }
+.nav-link {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-2);
+  text-decoration: none;
+  padding: 0.4rem 0.8rem;
+  border-radius: var(--radius-sm);
+  transition: all 0.2s;
+  border: 1px solid transparent;
+}
+.nav-link:hover {
+  color: var(--accent);
+  background: var(--accent-dim);
+  border-color: var(--border-accent);
+}
+
 /* ─── LAYOUT ─── */
 .app-layout {
   max-width: 1400px;
@@ -254,6 +272,68 @@ input:checked + .slider:before { transform: translateX(20px); background-color: 
   font-weight: 900;
   padding: 0.25rem 0.6rem;
   border-radius: 4px;
+}
+
+/* ─── MODAL ─── */
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.85);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 2rem;
+  animation: fadeIn 0.3s ease;
+}
+.modal-content {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  width: 100%;
+  max-width: 900px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+}
+.modal-header {
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.modal-header h3 { font-size: 1.1rem; color: var(--accent); }
+.close-modal {
+  background: transparent;
+  border: none;
+  color: var(--text-3);
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.close-modal:hover { color: var(--text-1); }
+.modal-body {
+  padding: 2rem;
+  overflow-y: auto;
+  flex: 1;
+  line-height: 1.8;
+}
+.markdown-content {
+  font-size: 0.95rem;
+  color: var(--text-2);
+}
+.markdown-content h1, .markdown-content h2, .markdown-content h3 {
+  color: var(--text-1);
+  margin: 1.5rem 0 1rem 0;
+}
+.markdown-content h2 { border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; }
+.markdown-content p { margin-bottom: 1rem; }
+.markdown-content ul { padding-left: 1.5rem; margin-bottom: 1rem; }
+.markdown-content li { margin-bottom: 0.5rem; }
+.markdown-content hr { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
   text-align: center;
   letter-spacing: 0.05em;
   margin-top: 0.5rem;
