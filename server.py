@@ -172,6 +172,7 @@ async def health_check():
         "sd_error": sd_health["error"],
         "nltk_path": str(nltk.data.path[0]) if hasattr(nltk, 'data') else "unknown",
         "personas": list(optimizer.expert_personas.keys()),
+        "ollama_model": optimizer.get_best_ollama_model(),
     }
 
 

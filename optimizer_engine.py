@@ -420,11 +420,35 @@ class PromptOptimizer:
 
     # ── T8: LLM Prompting (Ollama) ───────────────────────────────────────────
 
-    def ollama_enhance(self, prompt: str, model: str = "llama3.2") -> str:
+    def get_best_ollama_model(self) -> str:
+        """Detect best available model, prioritizing fine-tuned ones."""
+        try:
+            url = "http://localhost:11434/api/tags"
+            response = requests.get(url, timeout=3)
+            if response.status_code == 200:
+                models = [m["name"] for m in response.json().get("models", [])]
+                priorities = [
+                    "llama3.2-codegen-ft:latest",
+                    "tinyllama-history-ft:latest",
+                    "llama3.2:latest",
+                    "tinyllama:latest"
+                ]
+                for p in priorities:
+                    if p in models:
+                        return p
+            return "llama3.2" 
+        except Exception:
+            return "llama3.2"
+
+    def ollama_enhance(self, prompt: str, model: Optional[str] = None) -> Dict:
         """
         Zero-shot LLM enhancement via local Ollama.
         Maps to T8: Introduction to LLM, Prompting Basics.
         """
+        if not model:
+            model = self.get_best_ollama_model()
+            
+        is_ft = "-ft" in model
         url = "http://localhost:11434/api/generate"
         system_prompt = (
             "You are a professional image prompting expert for Stable Diffusion. "
@@ -440,21 +464,24 @@ class PromptOptimizer:
             "options": {"temperature": 0.7, "num_predict": 120},
         }
         try:
-            response = requests.post(url, json=payload, timeout=10)
+            response = requests.post(url, json=payload, timeout=12)
             if response.status_code == 200:
                 result = response.json().get("response", "").strip()
                 result = re.sub(
                     r'^(Enhanced|Modified|Result|Prompt|Output):\s*', '', result,
                     flags=re.IGNORECASE
                 )
-                return result
-            return prompt
+                return {"text": result, "model": model, "is_finetuned": is_ft}
+            return {"text": prompt, "model": model, "is_finetuned": is_ft}
         except Exception as e:
             logger.error(f"Ollama enhance error: {e}")
-            return prompt
+            return {"text": prompt, "model": model, "is_finetuned": is_ft}
 
-    def ollama_spellcheck(self, prompt: str, model: str = "llama3.2") -> Dict:
+    def ollama_spellcheck(self, prompt: str, model: Optional[str] = None) -> Dict:
         """Zero-shot LLM grammar/spelling correction. (T8)"""
+        if not model:
+            model = self.get_best_ollama_model()
+            
         url = "http://localhost:11434/api/generate"
         system_prompt = (
             "You are a professional proofreader. "
@@ -486,7 +513,7 @@ class PromptOptimizer:
                         dst = "".join(corr_parts[j1:j2]).strip()
                         if src or dst:
                             changes.append({"from": src or "(none)", "to": dst or "(removed)"})
-                return {"corrected_prompt": corrected, "changes": changes}
+                return {"corrected_prompt": corrected, "changes": changes, "model": model}
             return self.correct_spelling(prompt)
         except Exception:
             return self.correct_spelling(prompt)
@@ -1014,8 +1041,9 @@ class PromptOptimizer:
         clean_prompt = prompt.strip()
 
         # ── Stage 1: Spelling ────────────────────────────────────────────────
+        ollama_model = self.get_best_ollama_model() if use_ollama else None
         spellcheck = (
-            self.ollama_spellcheck(clean_prompt) if use_ollama
+            self.ollama_spellcheck(clean_prompt, model=ollama_model) if use_ollama
             else self.correct_spelling(clean_prompt)
         )
         nlp_prompt = spellcheck["corrected_prompt"].strip()
@@ -1091,9 +1119,15 @@ class PromptOptimizer:
         # ── Stage 11: LLM Refinement ─────────────────────────────────────────
         final_nlp_text = evolved_text
         ollama_data = None
+        is_finetuned = False
+        active_model = "None"
+        
         if use_ollama:
-            final_nlp_text = self.ollama_enhance(evolved_text)
+            res = self.ollama_enhance(evolved_text, model=ollama_model)
+            final_nlp_text = res["text"]
             ollama_data = final_nlp_text
+            is_finetuned = res.get("is_finetuned", False)
+            active_model = res.get("model", "Unknown")
 
         # ── Stage 12: Vibe + Aspect Mining ───────────────────────────────────
         vibe = self.analyze_vibe(nlp_prompt)
@@ -1147,9 +1181,10 @@ class PromptOptimizer:
                  "rejected": rejected_candidates,
                  "lm_scores": lm_scores
              }, "active": True},
-            {"step": 11, "name": "LLM Refinement",     "icon": "B", "color": "#f97316",
-             "detail": "Ollama zero-shot active" if use_ollama else "Bypassed (enable Ollama)",
-             "data": ollama_data, "active": use_ollama},
+            {"step": 11, "name": "Gen AI Refinement",  "icon": "G", "color": "#f97316",
+             "detail": f"Fine-tuned {active_model} active" if use_ollama else "Bypassed (enable Gen AI)",
+             "data": {"text": ollama_data, "model": active_model, "is_finetuned": is_finetuned}, 
+             "active": use_ollama},
             {"step": 12, "name": "Vibe & Aspect Analysis", "icon": "V", "color": vibe['color'],
              "detail": f"Mood: {vibe['mood'].upper()} | Aspects: {len(vibe['aspects'])} detected",
              "data": vibe, "active": True},
@@ -1191,6 +1226,11 @@ class PromptOptimizer:
             "lm_scores": lm_scores,
             "keyword_scores": dict(sorted(keyword_scores.items(), key=lambda x: x[1], reverse=True)[:15]),
             "change_summary": change_summary,
+            "gen_ai": {
+                "active": use_ollama,
+                "model": active_model,
+                "is_finetuned": is_finetuned
+            },
             "settings": {
                 "steps": 45 if use_ollama else 35,
                 "cfg_scale": 9.5 if use_ollama else 8.0,

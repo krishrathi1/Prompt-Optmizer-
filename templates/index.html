@@ -112,15 +112,15 @@
         </div>
       </div>
 
-      <!-- NEW: Ollama Integration -->
+      <!-- NEW: Gen AI Integration -->
       <div class="sidebar-block ollama-card">
-        <div class="sidebar-label">Local LLM Brain</div>
+        <div class="sidebar-label">Gen AI Neural Engine</div>
         <div class="ollama-toggle-wrap">
           <div class="ollama-info">
             <span class="ollama-icon">🧠</span>
             <div class="ollama-text">
-              <span class="ollama-name">Ollama AI</span>
-              <span class="ollama-status">Local Enhancement</span>
+              <span class="ollama-name" id="genAiName">Ollama AI</span>
+              <span class="ollama-status" id="genAiStatus">Local Enhancement</span>
             </div>
           </div>
           <label class="switch">
@@ -128,7 +128,8 @@
             <span class="slider round"></span>
           </label>
         </div>
-        <p class="ollama-desc">Requires Ollama running on port 11434 (llama3.2 recommended).</p>
+        <p class="ollama-desc" id="genAiDesc">Utilizing fine-tuned Llama 3.2 for elite prompt engineering.</p>
+        <div id="ftBadge" class="ft-badge" style="display:none">FINE-TUNED MODEL ACTIVE</div>
       </div>
 
       <div class="sidebar-block sd-config-card">
@@ -277,7 +278,7 @@
 
             <div class="prompt-card enhanced">
               <div class="prompt-card-header">
-                <span class="prompt-card-label enhanced-label">NLP-Enhanced</span>
+                <span class="prompt-card-label enhanced-label" id="optimizedLabel">NLP-Enhanced</span>
                 <button class="copy-btn enhanced-copy" id="copyOptimized" title="Copy to clipboard">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                   Copy

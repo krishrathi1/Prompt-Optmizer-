@@ -104,6 +104,17 @@ document.addEventListener('DOMContentLoaded', () => {
         el.statusLabel.textContent = d.sd_available
           ? (d.clip_fallback ? 'Online (CLIP fallback mode)' : 'Online — all systems ready')
           : 'API online — Stable Diffusion unavailable';
+        
+        if (d.ollama_model) {
+          const nameEl = document.getElementById('genAiName');
+          if (nameEl) nameEl.textContent = d.ollama_model;
+          const descEl = document.getElementById('genAiDesc');
+          if (descEl && d.ollama_model.includes('-ft')) {
+             descEl.textContent = `Fine-tuned model "${d.ollama_model}" detected. Ready for elite generation.`;
+             const ftBadge = document.getElementById('ftBadge');
+             if (ftBadge) ftBadge.style.display = 'block';
+          }
+        }
       } else throw new Error();
     } catch {
       el.statusDot.className = 'status-dot error';
@@ -227,6 +238,7 @@ document.addEventListener('DOMContentLoaded', () => {
       optimized_prompt: typeof data?.optimized_prompt === 'string' ? data.optimized_prompt : '',
       corrected_prompt: typeof data?.corrected_prompt === 'string' ? data.corrected_prompt : originalPrompt,
       spelling: (data?.spelling && Array.isArray(data.spelling.changes)) ? data.spelling : { changes: [] },
+      gen_ai: data?.gen_ai || { active: false, model: 'None', is_finetuned: false }
     };
 
     renderVibeHUD(safe.vibe);
@@ -237,7 +249,8 @@ document.addEventListener('DOMContentLoaded', () => {
     renderPipelineLog(safe.pipeline_log);
     renderVariants(safe.variants, safe.selected_variant);
     renderShield(safe.negative_prompt);
-    renderFinalPrompts(originalPrompt, safe.optimized_prompt);
+    renderFinalPrompts(originalPrompt, safe.optimized_prompt, safe.gen_ai);
+    renderGenAiStatus(safe.gen_ai);
 
     // Step 9: Show Pre-Render Benchmark by default
     el.preRenderBenchmark.style.display = 'block';
@@ -665,9 +678,39 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /* ─── FINAL PROMPTS + COPY ─── */
-  function renderFinalPrompts(original, optimized) {
+  function renderFinalPrompts(original, optimized, genAi) {
     el.finalOriginal.textContent = original;
     el.finalOptimized.textContent = optimized;
+    
+    const label = $('optimizedLabel');
+    if (label) {
+      if (genAi && genAi.active) {
+        label.textContent = genAi.is_finetuned ? 'Gen AI (Fine-tuned)' : 'Gen AI Optimized';
+        label.classList.add('enhanced-label');
+      } else {
+        label.textContent = 'NLP-Enhanced';
+        label.classList.remove('enhanced-label');
+      }
+    }
+  }
+
+  function renderGenAiStatus(genAi) {
+    const nameEl = $('genAiName');
+    const statusEl = $('genAiStatus');
+    const descEl = $('genAiDesc');
+    const ftBadge = $('ftBadge');
+
+    if (genAi && genAi.active) {
+      if (nameEl) nameEl.textContent = genAi.model;
+      if (statusEl) statusEl.textContent = genAi.is_finetuned ? 'Fine-tuned Active' : 'LLM Active';
+      if (descEl) descEl.textContent = `Optimized via ${genAi.model}. Academic-grade prompt expansion enabled.`;
+      if (ftBadge) ftBadge.style.display = genAi.is_finetuned ? 'block' : 'none';
+    } else {
+      if (nameEl) nameEl.textContent = 'Ollama AI';
+      if (statusEl) statusEl.textContent = 'Local Enhancement';
+      if (descEl) descEl.textContent = 'Requires Ollama running on port 11434 (llama3.2 recommended).';
+      if (ftBadge) ftBadge.style.display = 'none';
+    }
   }
 
   el.copyRaw.addEventListener('click', () => copyText(el.copyRaw, session.original));
